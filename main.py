@@ -2,6 +2,7 @@ import os
 import sys
 import pygame
 
+# старт игры
 pygame.init()
 size = width, height = 500, 500
 screen = pygame.display.set_mode(size)
@@ -49,6 +50,8 @@ tile_images = {
     'wall': pygame.transform.scale(load_image('wall.png'), (50, 50)),
     'ground': pygame.transform.scale(load_image('floor.png'), (50, 50))
 }
+
+# разные картинки игрока
 player_image = pygame.transform.scale(load_image("player2.png"),
                                                 (50, 50))
 player_image_l = pygame.transform.scale(load_image("player2_left.png"),
@@ -140,6 +143,7 @@ class Camera:
         self.dy = -(target.rect.y + target.rect.h // 2 - height // 2)
 
 
+# генерация уровня
 def generate_level(level):
     new_player, x, y = None, None, None
     for y in range(len(level)):
@@ -163,7 +167,8 @@ def terminate():
     sys.exit()
 
 
-def start_screen():  # функция заставки
+# функция заставки
+def start_screen():
     intro_text = ["Давным давно...", "",
                   "Существовали две расы -",
                   "Люди и монстры,",
@@ -196,7 +201,8 @@ def start_screen():  # функция заставки
         clock.tick(FPS)
 
 
-def main():  # тут главный цикл
+# тут главный цикл
+def main():
     try:
         camera = Camera()
         # level = input("Имя уровня:")
