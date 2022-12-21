@@ -17,7 +17,7 @@ def load_level(filename):
     max_width = max(map(len, level_map))
 
     # дополняем каждую строку пустыми клетками ('.')
-    return list(map(lambda x: x.ljust(max_width, '.'), level_map))
+    return list(map(lambda x: x.ljust(max_width, '~'), level_map))
 
 
 def load_image(name, colorkey=None):
@@ -46,10 +46,17 @@ tiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 wall_group = pygame.sprite.Group()
 tile_images = {
-    'wall': load_image('box.png'),
-    'empty': load_image('grass.png')
+    'wall': pygame.transform.scale(load_image('wall.png'), (50, 50)),
+    'ground': pygame.transform.scale(load_image('floor.png'), (50, 50))
 }
-player_image = load_image('mar.png')
+player_image = pygame.transform.scale(load_image("player2.png"),
+                                                (50, 50))
+player_image_l = pygame.transform.scale(load_image("player2_left.png"),
+                                                (50, 50))
+player_image_r = pygame.transform.scale(load_image("player2_right.png"),
+                                                (50, 50))
+player_image_u = pygame.transform.scale(load_image("player2_up.png"),
+                                                (50, 50))
 
 tile_width = tile_height = 50
 
@@ -67,29 +74,33 @@ class Tile(pygame.sprite.Sprite):
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group, all_sprites)
-        self.image = player_image
+        self.image = pygame.transform.scale(player_image, (50, 50))
         self.x = pos_x
         self.y = pos_y
         self.rect = self.image.get_rect().move(
-            tile_width * pos_x + 15, tile_height * pos_y + 5)
+            tile_width * pos_x, tile_height * pos_y)
 
     def move(self, direction):
         if direction == "left":
             self.x -= 1
             self.rect = self.rect.move(
                 -tile_width, 0)
+            self.image = player_image_l
         elif direction == "right":
             self.x += 1
             self.rect = self.rect.move(
                 tile_width, 0)
+            self.image = player_image_r
         elif direction == "down":
             self.y += 1
             self.rect = self.rect.move(
                 0, tile_height)
+            self.image = player_image
         elif direction == "up":
             self.y -= 1
             self.rect = self.rect.move(
                 0, -tile_height)
+            self.image = player_image_u
         else:
             print("неизвестное направление")
         if pygame.sprite.spritecollideany(self, wall_group):
@@ -109,7 +120,7 @@ class Player(pygame.sprite.Sprite):
                 self.y += 1
                 self.rect = self.rect.move(
                     0, tile_height)
-        print(self.x, self.y)
+        # print(self.x, self.y)
 
 
 class Camera:
@@ -134,11 +145,11 @@ def generate_level(level):
     for y in range(len(level)):
         for x in range(len(level[y])):
             if level[y][x] == '.':
-                Tile('empty', x, y)
+                Tile('ground', x, y)
             elif level[y][x] == '#':
                 Tile('wall', x, y)
             elif level[y][x] == '@':
-                Tile('empty', x, y)
+                Tile('ground', x, y)
                 new_player = Player(x, y)
     # вернем игрока, а также размер поля в клетках
     return new_player, x, y
