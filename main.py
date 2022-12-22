@@ -4,6 +4,7 @@ import pygame
 
 # старт игры
 pygame.init()
+pygame.key.set_repeat(200, 100)
 size = width, height = 500, 500
 screen = pygame.display.set_mode(size)
 
