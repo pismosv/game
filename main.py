@@ -4,7 +4,7 @@ import pygame
 
 # старт игры
 pygame.init()
-pygame.key.set_repeat(200, 100)
+pygame.key.set_repeat(200, 200)
 size = width, height = 500, 500
 screen = pygame.display.set_mode(size)
 
@@ -39,8 +39,14 @@ def load_image(name, colorkey=None):
     return image
 
 
+# Константы
+FPS = 50
+MAX_STAMINA = 20
+
 # основной персонаж
 player = None
+player_stamina = MAX_STAMINA // 2
+player_run = False
 
 # группы спрайтов
 all_sprites = pygame.sprite.Group()
@@ -54,13 +60,13 @@ tile_images = {
 
 # разные картинки игрока
 player_image = pygame.transform.scale(load_image("player2.png"),
-                                                (50, 50))
+                                      (50, 50))
 player_image_l = pygame.transform.scale(load_image("player2_left.png"),
-                                                (50, 50))
+                                        (50, 50))
 player_image_r = pygame.transform.scale(load_image("player2_right.png"),
-                                                (50, 50))
+                                        (50, 50))
 player_image_u = pygame.transform.scale(load_image("player2_up.png"),
-                                                (50, 50))
+                                        (50, 50))
 
 tile_width = tile_height = 50
 
@@ -85,46 +91,55 @@ class Player(pygame.sprite.Sprite):
             tile_width * pos_x, tile_height * pos_y)
 
     def move(self, direction):
-        if direction == "left":
-            self.x -= 1
-            self.rect = self.rect.move(
-                -tile_width, 0)
-            self.image = player_image_l
-        elif direction == "right":
-            self.x += 1
-            self.rect = self.rect.move(
-                tile_width, 0)
-            self.image = player_image_r
-        elif direction == "down":
-            self.y += 1
-            self.rect = self.rect.move(
-                0, tile_height)
-            self.image = player_image
-        elif direction == "up":
-            self.y -= 1
-            self.rect = self.rect.move(
-                0, -tile_height)
-            self.image = player_image_u
-        else:
-            print("неизвестное направление")
-        if pygame.sprite.spritecollideany(self, wall_group):
+        global player_stamina
+        if player_stamina >= 1:
+
+            if player_run:
+                pygame.key.set_repeat(200, 100)
+            else:
+                pygame.key.set_repeat(200, 200)
+
             if direction == "left":
-                self.x += 1
-                self.rect = self.rect.move(
-                    tile_width, 0)
-            elif direction == "right":
                 self.x -= 1
                 self.rect = self.rect.move(
                     -tile_width, 0)
-            elif direction == "down":
-                self.y -= 1
+                self.image = player_image_l
+            elif direction == "right":
+                self.x += 1
                 self.rect = self.rect.move(
-                    0, -tile_height)
-            elif direction == "up":
+                    tile_width, 0)
+                self.image = player_image_r
+            elif direction == "down":
                 self.y += 1
                 self.rect = self.rect.move(
                     0, tile_height)
-        # print(self.x, self.y)
+                self.image = player_image
+            elif direction == "up":
+                self.y -= 1
+                self.rect = self.rect.move(
+                    0, -tile_height)
+                self.image = player_image_u
+            else:
+                print("неизвестное направление")
+            if pygame.sprite.spritecollideany(self, wall_group):
+                if direction == "left":
+                    self.x += 1
+                    self.rect = self.rect.move(
+                        tile_width, 0)
+                elif direction == "right":
+                    self.x -= 1
+                    self.rect = self.rect.move(
+                        -tile_width, 0)
+                elif direction == "down":
+                    self.y -= 1
+                    self.rect = self.rect.move(
+                        0, -tile_height)
+                elif direction == "up":
+                    self.y += 1
+                    self.rect = self.rect.move(
+                        0, tile_height)
+            if player_run:
+                player_stamina -= 1
 
 
 class Camera:
@@ -160,12 +175,19 @@ def generate_level(level):
     return new_player, x, y
 
 
-FPS = 50
-
-
 def terminate():
     pygame.quit()
     sys.exit()
+
+
+def draw_ui():
+    font = pygame.font.Font(None, 30)
+    string_rendered = font.render(f"Выносливость:{player_stamina}",
+                                  True, pygame.Color('white'))
+    intro_rect = string_rendered.get_rect()
+    intro_rect.x = 10
+    intro_rect.y = 10
+    screen.blit(string_rendered, intro_rect)
 
 
 # функция заставки
@@ -196,7 +218,7 @@ def start_screen():
             if event.type == pygame.QUIT:
                 terminate()
             elif event.type == pygame.KEYDOWN or \
-                event.type == pygame.MOUSEBUTTONDOWN:
+                    event.type == pygame.MOUSEBUTTONDOWN:
                 return  # начинаем игру
         pygame.display.flip()
         clock.tick(FPS)
@@ -204,6 +226,7 @@ def start_screen():
 
 # тут главный цикл
 def main():
+    global player_stamina, player_run
     try:
         camera = Camera()
         # level = input("Имя уровня:")
@@ -211,6 +234,9 @@ def main():
         start_screen()
         clock = pygame.time.Clock()
         player, level_x, level_y = generate_level(load_level(level))
+        count = 0
+        MYEVENTTYPE = pygame.USEREVENT + 1
+        pygame.time.set_timer(MYEVENTTYPE, 600)
         while True:
             screen.fill("black")
             for event in pygame.event.get():
@@ -225,15 +251,30 @@ def main():
                         player.move("up")
                     if event.key == pygame.K_DOWN:
                         player.move("down")
-            # изменяем ракурс камеры
+                    if event.key == pygame.K_0:
+                        player_run = True
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        pygame.draw.rect(screen, "blue", (event.pos[0],
+                                                          event.pos[1],
+                                                          20,
+                                                          20))
+                if event.type == MYEVENTTYPE and player_stamina != MAX_STAMINA:
+                    player_stamina += 1
+
+            if player_stamina == 0:
+                player_run = False
+
             camera.update(player)
-            # обновляем положение всех спрайтов
             for sprite in all_sprites:
                 camera.apply(sprite)
+
             all_sprites.draw(screen)
             player_group.draw(screen)
+            draw_ui()
             pygame.display.flip()
             clock.tick(FPS)
+            count += 1
     except Exception as e:
         print("Ошибка:", e)
         terminate()
