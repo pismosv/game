@@ -1,6 +1,7 @@
 import os
 import sys
 import pygame
+from pygame.locals import *
 
 # старт игры
 pygame.init()
@@ -41,21 +42,27 @@ def load_image(name, colorkey=None):
 
 # Константы
 FPS = 50
-MAX_STAMINA = 20
 
 # основной персонаж
 player = None
-player_stamina = MAX_STAMINA // 2
-player_run = False
 
 # группы спрайтов
 all_sprites = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 wall_group = pygame.sprite.Group()
+objects_group = pygame.sprite.Group()
+
+# словари с картинками
+
 tile_images = {
     'wall': pygame.transform.scale(load_image('wall.png'), (50, 50)),
     'ground': pygame.transform.scale(load_image('floor.png'), (50, 50))
+}
+
+object_images = {
+    'vase': pygame.transform.scale(load_image('vase.png'),
+                                   (50, 50))
 }
 
 # разные картинки игрока
@@ -81,6 +88,14 @@ class Tile(pygame.sprite.Sprite):
             tile_width * pos_x, tile_height * pos_y)
 
 
+class Object(pygame.sprite.Sprite):
+    def __init__(self, tile_type, pos_x, pos_y):
+        super().__init__(objects_group, all_sprites)
+        self.image = object_images[tile_type]
+        self.rect = self.image.get_rect().move(
+            tile_width * pos_x, tile_height * pos_y)
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group, all_sprites)
@@ -89,57 +104,48 @@ class Player(pygame.sprite.Sprite):
         self.y = pos_y
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
+        self.hp = 20
 
     def move(self, direction):
-        global player_stamina
-        if player_stamina >= 1:
-
-            if player_run:
-                pygame.key.set_repeat(200, 100)
-            else:
-                pygame.key.set_repeat(200, 200)
-
+        if direction == "left":
+            self.x -= 1
+            self.rect = self.rect.move(
+                -tile_width, 0)
+            self.image = player_image_l
+        elif direction == "right":
+            self.x += 1
+            self.rect = self.rect.move(
+                tile_width, 0)
+            self.image = player_image_r
+        elif direction == "down":
+            self.y += 1
+            self.rect = self.rect.move(
+                0, tile_height)
+            self.image = player_image
+        elif direction == "up":
+            self.y -= 1
+            self.rect = self.rect.move(
+                0, -tile_height)
+            self.image = player_image_u
+        else:
+            print("неизвестное направление")
+        if pygame.sprite.spritecollideany(self, wall_group):
             if direction == "left":
-                self.x -= 1
-                self.rect = self.rect.move(
-                    -tile_width, 0)
-                self.image = player_image_l
-            elif direction == "right":
                 self.x += 1
                 self.rect = self.rect.move(
                     tile_width, 0)
-                self.image = player_image_r
-            elif direction == "down":
-                self.y += 1
+            elif direction == "right":
+                self.x -= 1
                 self.rect = self.rect.move(
-                    0, tile_height)
-                self.image = player_image
-            elif direction == "up":
+                    -tile_width, 0)
+            elif direction == "down":
                 self.y -= 1
                 self.rect = self.rect.move(
                     0, -tile_height)
-                self.image = player_image_u
-            else:
-                print("неизвестное направление")
-            if pygame.sprite.spritecollideany(self, wall_group):
-                if direction == "left":
-                    self.x += 1
-                    self.rect = self.rect.move(
-                        tile_width, 0)
-                elif direction == "right":
-                    self.x -= 1
-                    self.rect = self.rect.move(
-                        -tile_width, 0)
-                elif direction == "down":
-                    self.y -= 1
-                    self.rect = self.rect.move(
-                        0, -tile_height)
-                elif direction == "up":
-                    self.y += 1
-                    self.rect = self.rect.move(
-                        0, tile_height)
-            if player_run:
-                player_stamina -= 1
+            elif direction == "up":
+                self.y += 1
+                self.rect = self.rect.move(
+                    0, tile_height)
 
 
 class Camera:
@@ -171,6 +177,9 @@ def generate_level(level):
             elif level[y][x] == '@':
                 Tile('ground', x, y)
                 new_player = Player(x, y)
+            elif level[y][x] == "V":
+                Tile("ground", x, y)
+                Object("vase", x, y)
     # вернем игрока, а также размер поля в клетках
     return new_player, x, y
 
@@ -181,8 +190,9 @@ def terminate():
 
 
 def draw_ui():
+    global main_player
     font = pygame.font.Font(None, 30)
-    string_rendered = font.render(f"Выносливость:{player_stamina}",
+    string_rendered = font.render(f"Здоровье:{main_player.hp}",
                                   True, pygame.Color('white'))
     intro_rect = string_rendered.get_rect()
     intro_rect.x = 10
@@ -205,7 +215,7 @@ def start_screen():
     font = pygame.font.Font(None, 30)
     text_coord = 50
     for line in intro_text:  # тут отрисовываем все строчки одна за одной
-        string_rendered = font.render(line, True, pygame.Color('black'))
+        string_rendered = font.render(line, True, pygame.Color('white'))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
@@ -226,55 +236,61 @@ def start_screen():
 
 # тут главный цикл
 def main():
-    global player_stamina, player_run
+    global main_player
     try:
         camera = Camera()
         # level = input("Имя уровня:")
         level = "map.txt"
         start_screen()
         clock = pygame.time.Clock()
-        player, level_x, level_y = generate_level(load_level(level))
-        count = 0
+        main_player, level_x, level_y = generate_level(load_level(level))
         MYEVENTTYPE = pygame.USEREVENT + 1
         pygame.time.set_timer(MYEVENTTYPE, 600)
+        a = 0
+        pos = None
+        fullscreen = False
         while True:
             screen.fill("black")
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     terminate()
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_LEFT:
-                        player.move("left")
-                    if event.key == pygame.K_RIGHT:
-                        player.move("right")
-                    if event.key == pygame.K_UP:
-                        player.move("up")
-                    if event.key == pygame.K_DOWN:
-                        player.move("down")
-                    if event.key == pygame.K_0:
-                        player_run = True
+                    if event.key == pygame.K_a:
+                        main_player.move("left")
+                    if event.key == pygame.K_d:
+                        main_player.move("right")
+                    if event.key == pygame.K_w:
+                        main_player.move("up")
+                    if event.key == pygame.K_s:
+                        main_player.move("down")
+                    if event.key == pygame.K_F11:
+                        if not fullscreen:
+                            pygame.display.set_mode((width, height), FULLSCREEN)
+                            fullscreen = True
+                    if event.key == pygame.K_F10:
+                        if fullscreen:
+                            pygame.display.set_mode((width, height))
+                            fullscreen = False
+
                 if event.type == pygame.MOUSEBUTTONDOWN:
+                    pos = event.pos
                     if event.button == 1:
-                        pygame.draw.rect(screen, "blue", (event.pos[0],
-                                                          event.pos[1],
-                                                          20,
-                                                          20))
-                if event.type == MYEVENTTYPE and player_stamina != MAX_STAMINA:
-                    player_stamina += 1
-
-            if player_stamina == 0:
-                player_run = False
-
-            camera.update(player)
+                        a = 1
+            camera.update(main_player)
             for sprite in all_sprites:
                 camera.apply(sprite)
-
             all_sprites.draw(screen)
+            objects_group.draw(screen)
             player_group.draw(screen)
             draw_ui()
+            if a == 1:
+                pygame.draw.rect(screen, "blue", (pos[0],
+                                                  pos[1],
+                                                  20,
+                                                  20))
+                a = 0
             pygame.display.flip()
             clock.tick(FPS)
-            count += 1
     except Exception as e:
         print("Ошибка:", e)
         terminate()
