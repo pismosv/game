@@ -62,7 +62,9 @@ tile_images = {
 
 object_images = {
     'vase': pygame.transform.scale(load_image('vase.png'),
-                                   (50, 50))
+                                   (50, 50)),
+    'diamond': pygame.transform.scale(load_image('diamond.png'),
+                                      (50, 50))
 }
 
 # разные картинки игрока
@@ -167,6 +169,7 @@ class Camera:
 
 # генерация уровня
 def generate_level(level):
+    objects_list = "vD"
     new_player, x, y = None, None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
@@ -177,10 +180,14 @@ def generate_level(level):
             elif level[y][x] == '@':
                 Tile('ground', x, y)
                 new_player = Player(x, y)
-            elif level[y][x] == "V":
-                Tile("ground", x, y)
-                Object("vase", x, y)
-    # вернем игрока, а также размер поля в клетках
+            elif level[y][x] in objects_list:
+                if level[y][x] == "v":
+                    Tile("ground", x, y)
+                    Object("vase", x, y)
+                elif level[y][x] == "D":
+                    Tile("ground", x, y)
+                    Object("diamond", x, y)
+                    # вернем игрока, а также размер поля в клетках
     return new_player, x, y
 
 
@@ -234,21 +241,21 @@ def start_screen():
         clock.tick(FPS)
 
 
+camera = Camera()
+# level = input("Имя уровня:")
+level = "map.txt"
+start_screen()
+clock = pygame.time.Clock()
+main_player, level_x, level_y = generate_level(load_level(level))
+MYEVENTTYPE = pygame.USEREVENT + 1
+pygame.time.set_timer(MYEVENTTYPE, 600)
+a = 0
+pos = None
+fullscreen = False
 # тут главный цикл
 def main():
-    global main_player
+    global main_player, fullscreen
     try:
-        camera = Camera()
-        # level = input("Имя уровня:")
-        level = "map.txt"
-        start_screen()
-        clock = pygame.time.Clock()
-        main_player, level_x, level_y = generate_level(load_level(level))
-        MYEVENTTYPE = pygame.USEREVENT + 1
-        pygame.time.set_timer(MYEVENTTYPE, 600)
-        a = 0
-        pos = None
-        fullscreen = False
         while True:
             screen.fill("black")
             for event in pygame.event.get():
@@ -274,21 +281,12 @@ def main():
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     pos = event.pos
-                    if event.button == 1:
-                        a = 1
             camera.update(main_player)
             for sprite in all_sprites:
                 camera.apply(sprite)
             all_sprites.draw(screen)
-            objects_group.draw(screen)
             player_group.draw(screen)
             draw_ui()
-            if a == 1:
-                pygame.draw.rect(screen, "blue", (pos[0],
-                                                  pos[1],
-                                                  20,
-                                                  20))
-                a = 0
             pygame.display.flip()
             clock.tick(FPS)
     except Exception as e:
