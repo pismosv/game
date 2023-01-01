@@ -1,7 +1,10 @@
 import os
+import random
 import sys
 import pygame
 from pygame.locals import *
+import paticle
+import items
 
 # старт игры
 pygame.init()
@@ -52,6 +55,7 @@ tiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 wall_group = pygame.sprite.Group()
 objects_group = pygame.sprite.Group()
+items_group = pygame.sprite.Group()
 
 # словари с картинками
 
@@ -63,6 +67,9 @@ tile_images = {
 object_images = {
     'vase': pygame.transform.scale(load_image('vase.png'),
                                    (50, 50)),
+}
+
+items_images = {
     'diamond': pygame.transform.scale(load_image('diamond.png'),
                                       (50, 50))
 }
@@ -91,9 +98,9 @@ class Tile(pygame.sprite.Sprite):
 
 
 class Object(pygame.sprite.Sprite):
-    def __init__(self, tile_type, pos_x, pos_y):
+    def __init__(self, obj_type, pos_x, pos_y):
         super().__init__(objects_group, all_sprites)
-        self.image = object_images[tile_type]
+        self.image = object_images[obj_type]
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
 
@@ -131,7 +138,8 @@ class Player(pygame.sprite.Sprite):
             self.image = player_image_u
         else:
             print("неизвестное направление")
-        if pygame.sprite.spritecollideany(self, wall_group):
+        if pygame.sprite.spritecollideany(self, wall_group) or \
+                pygame.sprite.spritecollideany(self, objects_group):
             if direction == "left":
                 self.x += 1
                 self.rect = self.rect.move(
@@ -148,6 +156,8 @@ class Player(pygame.sprite.Sprite):
                 self.y += 1
                 self.rect = self.rect.move(
                     0, tile_height)
+        if pygame.sprite.spritecollideany(self, items_group):
+            pass
 
 
 class Camera:
@@ -186,7 +196,7 @@ def generate_level(level):
                     Object("vase", x, y)
                 elif level[y][x] == "D":
                     Tile("ground", x, y)
-                    Object("diamond", x, y)
+                    items.Diamond(x, y, all_sprites, items_group)
                     # вернем игрока, а также размер поля в клетках
     return new_player, x, y
 
@@ -252,12 +262,15 @@ pygame.time.set_timer(MYEVENTTYPE, 600)
 a = 0
 pos = None
 fullscreen = False
+
+
 # тут главный цикл
 def main():
     global main_player, fullscreen
     try:
         while True:
             screen.fill("black")
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     terminate()
@@ -281,6 +294,7 @@ def main():
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     pos = event.pos
+                    paticle.Particle(pos, 10, 10)
             camera.update(main_player)
             for sprite in all_sprites:
                 camera.apply(sprite)
