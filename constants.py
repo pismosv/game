@@ -2,7 +2,11 @@ import pygame
 
 
 # Константы
+<<<<<<< HEAD
 FPS = 20
+=======
+FPS = 50
+>>>>>>> a60ae16 (dev 0.1.a)
 WIDTH, HEIGHT = 500, 500
 GRAVITY = 5
 
