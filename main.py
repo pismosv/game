@@ -5,6 +5,8 @@ import pygame
 from pygame.locals import *
 import paticle
 import items
+from constants import *
+from general_functions import *
 
 # старт игры
 pygame.init()
@@ -25,26 +27,6 @@ def load_level(filename):
     # дополняем каждую строку пустыми клетками ('.')
     return list(map(lambda x: x.ljust(max_width, '~'), level_map))
 
-
-def load_image(name, colorkey=None):
-    fullname = os.path.join('data', name)
-    # если файл не существует, то выходим
-    if not os.path.isfile(fullname):
-        print(f"Файл с изображением '{fullname}' не найден")
-        sys.exit()
-    image = pygame.image.load(fullname)
-    if colorkey is not None:
-        image = image.convert()
-        if colorkey == -1:
-            colorkey = image.get_at((0, 0))
-        image.set_colorkey(colorkey)
-    else:
-        image = image.convert_alpha()
-    return image
-
-
-# Константы
-FPS = 50
 
 # основной персонаж
 player = None
@@ -116,6 +98,7 @@ class Player(pygame.sprite.Sprite):
         self.hp = 20
 
     def move(self, direction):
+        global diamonds
         if direction == "left":
             self.x -= 1
             self.rect = self.rect.move(
@@ -156,8 +139,15 @@ class Player(pygame.sprite.Sprite):
                 self.y += 1
                 self.rect = self.rect.move(
                     0, tile_height)
-        if pygame.sprite.spritecollideany(self, items_group):
-            pass
+        for item in items_list:
+            if items_list:
+                if pygame.sprite.collide_rect(self, item):
+                    print("collide with item")
+                    if type(item) == items.Diamond:
+                        item.kill()
+                        diamonds += 1
+                        items_list.remove(item)
+
 
 
 class Camera:
@@ -177,8 +167,10 @@ class Camera:
         self.dy = -(target.rect.y + target.rect.h // 2 - height // 2)
 
 
+items_list = []
 # генерация уровня
 def generate_level(level):
+    global items_list
     objects_list = "vD"
     new_player, x, y = None, None, None
     for y in range(len(level)):
@@ -193,10 +185,11 @@ def generate_level(level):
             elif level[y][x] in objects_list:
                 if level[y][x] == "v":
                     Tile("ground", x, y)
-                    Object("vase", x, y)
+                    items_list.append(Object("vase", x, y))
                 elif level[y][x] == "D":
                     Tile("ground", x, y)
-                    items.Diamond(x, y, all_sprites, items_group)
+                    items_list.append(items.Diamond(x, y, all_sprites,
+                                                    items_group))
                     # вернем игрока, а также размер поля в клетках
     return new_player, x, y
 
@@ -207,10 +200,10 @@ def terminate():
 
 
 def draw_ui():
-    global main_player
+    global main_player, diamonds
     font = pygame.font.Font(None, 30)
-    string_rendered = font.render(f"Здоровье:{main_player.hp}",
-                                  True, pygame.Color('white'))
+    string_rendered = font.render(f"Алмазы:{diamonds}",
+                                  True, pygame.Color('cyan'))
     intro_rect = string_rendered.get_rect()
     intro_rect.x = 10
     intro_rect.y = 10
@@ -220,14 +213,16 @@ def draw_ui():
 # функция заставки
 def start_screen():
     intro_text = ["Давным давно...", "",
-                  "Существовали две расы -",
-                  "Люди и монстры,",
-                  "Но люди загнали их в подземелье,",
-                  "И сейчас монстры хотят ",
-                  "вернуться на поверхность...",
-                  "Но наш герой им этого не даст."]
+                  "Древняя раса людей создала",
+                  "Магические камни",
+                  "Но после 4 тысяч лет, предки",
+                  "Этих могущественных людей начали воевать",
+                  "Из-за этих камней. После войны",
+                  "камни остались в древних руинах.",
+                  "И наш герой решил их собрать,",
+                  "Чтобы вернуть могущество своего народа"]
 
-    fon = pygame.transform.scale(load_image('fon.png'), (width, height))
+    fon = pygame.transform.scale(load_image('fon_level.png'), (width, height))
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 30)
     text_coord = 50
@@ -262,6 +257,7 @@ pygame.time.set_timer(MYEVENTTYPE, 600)
 a = 0
 pos = None
 fullscreen = False
+diamonds = 0
 
 
 # тут главный цикл
