@@ -3,10 +3,10 @@ import random
 import sys
 import pygame
 from pygame.locals import *
-import paticle
 import items
 from constants import *
 from general_functions import *
+from animated_sprites import *
 
 # старт игры
 pygame.init()
@@ -142,12 +142,15 @@ class Player(pygame.sprite.Sprite):
         for item in items_list:
             if items_list:
                 if pygame.sprite.collide_rect(self, item):
-                    print("collide with item")
                     if type(item) == items.Diamond:
                         item.kill()
                         diamonds += 1
                         items_list.remove(item)
-
+                    if type(item) == items.Mine:
+                        item.kill()
+                        self.hp -= 15
+                        booms.append(Boom(item.rect.x, item.rect.y))
+                        items_list.remove(item)
 
 
 class Camera:
@@ -167,11 +170,23 @@ class Camera:
         self.dy = -(target.rect.y + target.rect.h // 2 - height // 2)
 
 
+class Boom(AnimatedSprite):
+    def __init__(self, x, y):
+        super(Boom, self).__init__(
+            pygame.transform.scale(load_image("boom.png"),
+                                   (450, 50)), 9, 1, x, y, all_sprites)
+
+    def update(self):
+        super(Boom, self).update()
+
+
 items_list = []
+
+
 # генерация уровня
 def generate_level(level):
     global items_list
-    objects_list = "vD"
+    objects_list = "vDm"
     new_player, x, y = None, None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
@@ -183,14 +198,15 @@ def generate_level(level):
                 Tile('ground', x, y)
                 new_player = Player(x, y)
             elif level[y][x] in objects_list:
+                Tile("ground", x, y)
                 if level[y][x] == "v":
-                    Tile("ground", x, y)
                     items_list.append(Object("vase", x, y))
                 elif level[y][x] == "D":
-                    Tile("ground", x, y)
                     items_list.append(items.Diamond(x, y, all_sprites,
                                                     items_group))
-                    # вернем игрока, а также размер поля в клетках
+                elif level[y][x] == "m":
+                    items_list.append(items.Mine(x, y, all_sprites,
+                                                 items_group))
     return new_player, x, y
 
 
@@ -206,8 +222,14 @@ def draw_ui():
                                   True, pygame.Color('cyan'))
     intro_rect = string_rendered.get_rect()
     intro_rect.x = 10
-    intro_rect.y = 10
+    intro_rect.y = 30
     screen.blit(string_rendered, intro_rect)
+    hp_text = font.render(f"Здоровье:{main_player.hp}",
+                          True, pygame.Color('white'))
+    hp_rect = hp_text.get_rect()
+    hp_rect.x = 10
+    hp_rect.y = 10
+    screen.blit(hp_text, hp_rect)
 
 
 # функция заставки
@@ -258,6 +280,7 @@ a = 0
 pos = None
 fullscreen = False
 diamonds = 0
+booms = []
 
 
 # тут главный цикл
@@ -266,19 +289,19 @@ def main():
     try:
         while True:
             screen.fill("black")
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     terminate()
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_a:
-                        main_player.move("left")
-                    if event.key == pygame.K_d:
-                        main_player.move("right")
-                    if event.key == pygame.K_w:
-                        main_player.move("up")
-                    if event.key == pygame.K_s:
-                        main_player.move("down")
+                    if main_player.hp > 0:
+                        if event.key == pygame.K_a:
+                            main_player.move("left")
+                        if event.key == pygame.K_d:
+                            main_player.move("right")
+                        if event.key == pygame.K_w:
+                            main_player.move("up")
+                        if event.key == pygame.K_s:
+                            main_player.move("down")
                     if event.key == pygame.K_F11:
                         if not fullscreen:
                             pygame.display.set_mode((width, height), FULLSCREEN)
@@ -287,16 +310,17 @@ def main():
                         if fullscreen:
                             pygame.display.set_mode((width, height))
                             fullscreen = False
-
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    pos = event.pos
-                    paticle.Particle(pos, 10, 10)
             camera.update(main_player)
             for sprite in all_sprites:
                 camera.apply(sprite)
             all_sprites.draw(screen)
             player_group.draw(screen)
             draw_ui()
+            for boom in booms:
+                boom.update()
+                if boom.cur_frame == 8:
+                    booms.remove(boom)
+                    boom.kill()
             pygame.display.flip()
             clock.tick(FPS)
     except Exception as e:

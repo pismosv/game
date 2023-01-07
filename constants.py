@@ -2,7 +2,7 @@ import pygame
 
 
 # Константы
-FPS = 50
+FPS = 20
 WIDTH, HEIGHT = 500, 500
 GRAVITY = 5
 
