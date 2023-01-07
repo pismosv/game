@@ -24,7 +24,11 @@ def load_image(name, colorkey=None):
 
 items_images = {
     'diamond': pygame.transform.scale(load_image('diamond.png'),
-                                      (50, 50))
+                                      (50, 50)),
+    'stick': pygame.transform.scale(load_image('stick.png'),
+                                    (50, 50)),
+    'mine': pygame.transform.scale(load_image('mine.png'),
+                                   (50, 50))
 }
 
 tile_width = tile_height = 50
@@ -41,4 +45,16 @@ class Item(pygame.sprite.Sprite):
 class Diamond(Item):
     def __init__(self, pos_x, pos_y, *groups):
         super(Diamond, self).__init__("diamond", pos_x, pos_y, groups)
+        self.value = random.randint(10, 15)
+
+
+class Stick(Item):
+    def __init__(self, pos_x, pos_y, *groups):
+        super(Stick, self).__init__("stick", pos_x, pos_y, groups)
+        self.value = random.randint(10, 15)
+
+
+class Mine(Item):
+    def __init__(self, pos_x, pos_y, *groups):
+        super(Mine, self).__init__("mine", pos_x, pos_y, groups)
         self.value = random.randint(10, 15)
