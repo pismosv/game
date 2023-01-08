@@ -96,6 +96,7 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
         self.hp = 20
+        self.inventory = []
 
     def move(self, direction):
         global diamonds
@@ -145,11 +146,16 @@ class Player(pygame.sprite.Sprite):
                     if type(item) == items.Diamond:
                         item.kill()
                         diamonds += 1
+                        self.inventory.append(str(item))
                         items_list.remove(item)
-                    if type(item) == items.Mine:
+                    elif type(item) == items.Mine:
                         item.kill()
                         self.hp -= 15
                         booms.append(Boom(item.rect.x, item.rect.y))
+                        items_list.remove(item)
+                    else:
+                        item.kill()
+                        self.inventory.append(str(item))
                         items_list.remove(item)
 
 
@@ -186,7 +192,6 @@ items_list = []
 # генерация уровня
 def generate_level(level):
     global items_list
-    objects_list = "vDm"
     new_player, x, y = None, None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
@@ -197,16 +202,31 @@ def generate_level(level):
             elif level[y][x] == '@':
                 Tile('ground', x, y)
                 new_player = Player(x, y)
-            elif level[y][x] in objects_list:
+            elif level[y][x] == "v":
                 Tile("ground", x, y)
-                if level[y][x] == "v":
-                    items_list.append(Object("vase", x, y))
-                elif level[y][x] == "D":
+                items_list.append(Object("vase", x, y))
+            elif level[y][x] == "m":
+                Tile("ground", x, y)
+                items_list.append(items.Mine(x, y, all_sprites,
+                                             items_group))
+            elif level[y][x] == "S":
+                Tile("ground", x, y)
+                s = random.random()
+                if s <= 0.25:
+                    items_list.append(items.Stick(x, y, all_sprites,
+                                                  items_group))
+                elif s <= 0.5:
+                    items_list.append(items.Stone(x, y, all_sprites,
+                                                  items_group))
+                elif s <= 0.8:
+                    items_list.append(items.Coin(x, y, all_sprites,
+                                                 items_group))
+                elif s <= 0.95:
+                    items_list.append(items.Jade(x, y, all_sprites,
+                                                 items_group))
+                elif s <= 1:
                     items_list.append(items.Diamond(x, y, all_sprites,
                                                     items_group))
-                elif level[y][x] == "m":
-                    items_list.append(items.Mine(x, y, all_sprites,
-                                                 items_group))
     return new_player, x, y
 
 
@@ -310,6 +330,8 @@ def main():
                         if fullscreen:
                             pygame.display.set_mode((width, height))
                             fullscreen = False
+                    if event.key == pygame.K_c:
+                        print(main_player.inventory)
             camera.update(main_player)
             for sprite in all_sprites:
                 camera.apply(sprite)
