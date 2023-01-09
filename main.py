@@ -1,7 +1,12 @@
 import os
+import random
 import sys
 import pygame
 from pygame.locals import *
+import items
+from constants import *
+from general_functions import *
+from animated_sprites import *
 
 # старт игры
 pygame.init()
@@ -23,26 +28,6 @@ def load_level(filename):
     return list(map(lambda x: x.ljust(max_width, '~'), level_map))
 
 
-def load_image(name, colorkey=None):
-    fullname = os.path.join('data', name)
-    # если файл не существует, то выходим
-    if not os.path.isfile(fullname):
-        print(f"Файл с изображением '{fullname}' не найден")
-        sys.exit()
-    image = pygame.image.load(fullname)
-    if colorkey is not None:
-        image = image.convert()
-        if colorkey == -1:
-            colorkey = image.get_at((0, 0))
-        image.set_colorkey(colorkey)
-    else:
-        image = image.convert_alpha()
-    return image
-
-
-# Константы
-FPS = 50
-
 # основной персонаж
 player = None
 
@@ -52,6 +37,7 @@ tiles_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 wall_group = pygame.sprite.Group()
 objects_group = pygame.sprite.Group()
+items_group = pygame.sprite.Group()
 
 # словари с картинками
 
@@ -63,6 +49,9 @@ tile_images = {
 object_images = {
     'vase': pygame.transform.scale(load_image('vase.png'),
                                    (50, 50)),
+}
+
+items_images = {
     'diamond': pygame.transform.scale(load_image('diamond.png'),
                                       (50, 50))
 }
@@ -91,9 +80,9 @@ class Tile(pygame.sprite.Sprite):
 
 
 class Object(pygame.sprite.Sprite):
-    def __init__(self, tile_type, pos_x, pos_y):
+    def __init__(self, obj_type, pos_x, pos_y):
         super().__init__(objects_group, all_sprites)
-        self.image = object_images[tile_type]
+        self.image = object_images[obj_type]
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
 
@@ -107,31 +96,43 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
         self.hp = 20
+        self.inventory = []
+        self.looking = "down"
+
+    def change_player_sprite(self, direction):
+        self.looking = direction
+        if direction == "left":
+            self.image = player_image_l
+        elif direction == "right":
+            self.image = player_image_r
+        elif direction == "down":
+            self.image = player_image
+        elif direction == "up":
+            self.image = player_image_u
 
     def move(self, direction):
+        global diamonds
+        self.change_player_sprite(direction)
         if direction == "left":
             self.x -= 1
             self.rect = self.rect.move(
                 -tile_width, 0)
-            self.image = player_image_l
         elif direction == "right":
             self.x += 1
             self.rect = self.rect.move(
                 tile_width, 0)
-            self.image = player_image_r
         elif direction == "down":
             self.y += 1
             self.rect = self.rect.move(
                 0, tile_height)
-            self.image = player_image
         elif direction == "up":
             self.y -= 1
             self.rect = self.rect.move(
                 0, -tile_height)
-            self.image = player_image_u
         else:
             print("неизвестное направление")
-        if pygame.sprite.spritecollideany(self, wall_group):
+        if pygame.sprite.spritecollideany(self, wall_group) or \
+                pygame.sprite.spritecollideany(self, objects_group):
             if direction == "left":
                 self.x += 1
                 self.rect = self.rect.move(
@@ -148,6 +149,65 @@ class Player(pygame.sprite.Sprite):
                 self.y += 1
                 self.rect = self.rect.move(
                     0, tile_height)
+        for item in items_list:
+            if items_list:
+                if pygame.sprite.collide_rect(self, item):
+                    if type(item) == items.Diamond:
+                        item.kill()
+                        diamonds += 1
+                        self.inventory.append(str(item))
+                        items_list.remove(item)
+                    elif type(item) == items.Mine:
+                        item.kill()
+                        self.hp -= 15
+                        booms.append(Boom(item.rect.x, item.rect.y))
+                        items_list.remove(item)
+                    else:
+                        item.kill()
+                        self.inventory.append(str(item))
+                        items_list.remove(item)
+
+
+class FlyingStone(pygame.sprite.Sprite):
+    def __init__(self, looking, x, y):
+        super().__init__(all_sprites)
+        self.image = pygame.transform.scale(load_image("flying_stone.png"),
+                                            (50, 50))
+        self.look = looking
+        self.x, self.y = x, y
+        self.rect = self.image.get_rect().move(
+            main_player.rect.x,
+            main_player.rect.y)
+
+    def update(self):
+        if pygame.sprite.spritecollideany(self, wall_group) or \
+                pygame.sprite.spritecollideany(self, objects_group):
+            self.kill()
+            stones.remove(self)
+        if self.look == "right":
+            self.x -= 1
+            self.rect = self.rect.move(
+                tile_width, 0)
+        elif self.look == "left":
+            self.x += 1
+            self.rect = self.rect.move(
+                -tile_width, 0)
+        elif self.look == "up":
+            self.y -= 1
+            self.rect = self.rect.move(
+                0, -tile_height)
+        elif self.look == "down":
+            self.y += 1
+            self.rect = self.rect.move(
+                0, tile_height)
+        for item in items_list:
+            if items_list:
+                if pygame.sprite.collide_rect(self, item):
+                    if type(item) == items.Mine:
+                        item.kill()
+                        booms.append(Boom(item.rect.x, item.rect.y))
+                        items_list.remove(item)
+                        self.kill()
 
 
 class Camera:
@@ -167,9 +227,22 @@ class Camera:
         self.dy = -(target.rect.y + target.rect.h // 2 - height // 2)
 
 
+class Boom(AnimatedSprite):
+    def __init__(self, x, y):
+        super(Boom, self).__init__(
+            pygame.transform.scale(load_image("boom.png"),
+                                   (450, 50)), 9, 1, x, y, all_sprites)
+
+    def update(self):
+        super(Boom, self).update()
+
+
+items_list = []
+
+
 # генерация уровня
 def generate_level(level):
-    objects_list = "vD"
+    global items_list
     new_player, x, y = None, None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
@@ -180,14 +253,33 @@ def generate_level(level):
             elif level[y][x] == '@':
                 Tile('ground', x, y)
                 new_player = Player(x, y)
-            elif level[y][x] in objects_list:
-                if level[y][x] == "v":
-                    Tile("ground", x, y)
-                    Object("vase", x, y)
-                elif level[y][x] == "D":
-                    Tile("ground", x, y)
-                    Object("diamond", x, y)
-                    # вернем игрока, а также размер поля в клетках
+            elif level[y][x] == "v":
+                Tile("ground", x, y)
+                items_list.append(Object("vase", x, y))
+            elif level[y][x] == "m":
+                Tile("ground", x, y)
+                items_list.append(items.Mine(x, y, all_sprites,
+                                             items_group))
+            elif level[y][x] == "S":
+                Tile("ground", x, y)
+                c = random.random()
+                if c >= 0.5:
+                    s = random.random()
+                    if s <= 0.25:
+                        items_list.append(items.Stick(x, y, all_sprites,
+                                                      items_group))
+                    elif s <= 0.5:
+                        items_list.append(items.Stone(x, y, all_sprites,
+                                                      items_group))
+                    elif s <= 0.8:
+                        items_list.append(items.Coin(x, y, all_sprites,
+                                                     items_group))
+                    elif s <= 0.95:
+                        items_list.append(items.Jade(x, y, all_sprites,
+                                                     items_group))
+                    elif s <= 1:
+                        items_list.append(items.Diamond(x, y, all_sprites,
+                                                        items_group))
     return new_player, x, y
 
 
@@ -197,27 +289,41 @@ def terminate():
 
 
 def draw_ui():
-    global main_player
+    global main_player, diamonds, stones
     font = pygame.font.Font(None, 30)
-    string_rendered = font.render(f"Здоровье:{main_player.hp}",
-                                  True, pygame.Color('white'))
+    string_rendered = font.render(f"Предметы:{len(main_player.inventory)}",
+                                  True, pygame.Color('yellow'))
     intro_rect = string_rendered.get_rect()
     intro_rect.x = 10
-    intro_rect.y = 10
+    intro_rect.y = 30
     screen.blit(string_rendered, intro_rect)
+    hp_text = font.render(f"Здоровье:{main_player.hp}",
+                          True, pygame.Color('red'))
+    hp_rect = hp_text.get_rect()
+    hp_rect.x = 10
+    hp_rect.y = 10
+    screen.blit(hp_text, hp_rect)
+    stone_srt = font.render(f"Камни:{stones_have}",
+                            True, pygame.Color('gray'))
+    intro_rect1 = string_rendered.get_rect()
+    intro_rect1.x = 10
+    intro_rect1.y = 50
+    screen.blit(stone_srt, intro_rect1)
 
 
 # функция заставки
 def start_screen():
-    intro_text = ["Давным давно...", "",
-                  "Существовали две расы -",
-                  "Люди и монстры,",
-                  "Но люди загнали их в подземелье,",
-                  "И сейчас монстры хотят ",
-                  "вернуться на поверхность...",
-                  "Но наш герой им этого не даст."]
+    intro_text = ["", "Давным давно...",
+                  "Древняя раса людей создала",
+                  "Магические камни",
+                  "Но после 4 тысяч лет, предки",
+                  "Этих могущественных людей начали воевать",
+                  "Из-за этих камней. После войны",
+                  "камни остались в древних руинах.",
+                  "И наш герой решил их собрать,",
+                  "Чтобы вернуть могущество своего народа"]
 
-    fon = pygame.transform.scale(load_image('fon.png'), (width, height))
+    fon = pygame.transform.scale(load_image('fon_level.png'), (width, height))
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 30)
     text_coord = 50
@@ -252,9 +358,15 @@ pygame.time.set_timer(MYEVENTTYPE, 600)
 a = 0
 pos = None
 fullscreen = False
+diamonds = 0
+booms = []
+stones_have = 3
+stones = []
+
+
 # тут главный цикл
 def main():
-    global main_player, fullscreen
+    global main_player, fullscreen, stones_have
     try:
         while True:
             screen.fill("black")
@@ -262,14 +374,29 @@ def main():
                 if event.type == pygame.QUIT:
                     terminate()
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_a:
-                        main_player.move("left")
-                    if event.key == pygame.K_d:
-                        main_player.move("right")
-                    if event.key == pygame.K_w:
-                        main_player.move("up")
-                    if event.key == pygame.K_s:
-                        main_player.move("down")
+                    if main_player.hp > 0:
+                        if event.key == pygame.K_a:
+                            main_player.move("left")
+                        if event.key == pygame.K_d:
+                            main_player.move("right")
+                        if event.key == pygame.K_w:
+                            main_player.move("up")
+                        if event.key == pygame.K_s:
+                            main_player.move("down")
+                        if event.key == pygame.K_LEFT:
+                            main_player.change_player_sprite("left")
+                        if event.key == pygame.K_RIGHT:
+                            main_player.change_player_sprite("right")
+                        if event.key == pygame.K_UP:
+                            main_player.change_player_sprite("up")
+                        if event.key == pygame.K_DOWN:
+                            main_player.change_player_sprite("down")
+                        if event.key == pygame.K_f:
+                            if stones_have != 0:
+                                stones.append(FlyingStone(main_player.looking,
+                                                          main_player.x,
+                                                          main_player.y))
+                                stones_have -= 1
                     if event.key == pygame.K_F11:
                         if not fullscreen:
                             pygame.display.set_mode((width, height), FULLSCREEN)
@@ -278,15 +405,21 @@ def main():
                         if fullscreen:
                             pygame.display.set_mode((width, height))
                             fullscreen = False
-
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    pos = event.pos
+                    if event.key == pygame.K_c:
+                        print(main_player.inventory)
             camera.update(main_player)
             for sprite in all_sprites:
                 camera.apply(sprite)
             all_sprites.draw(screen)
             player_group.draw(screen)
             draw_ui()
+            for boom in booms:
+                boom.update()
+                if boom.cur_frame == 8:
+                    booms.remove(boom)
+                    boom.kill()
+            for s in stones:
+                s.update()
             pygame.display.flip()
             clock.tick(FPS)
     except Exception as e:
