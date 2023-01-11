@@ -23,4 +23,6 @@ player_group = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
 wall_group = pygame.sprite.Group()
 objects_group = pygame.sprite.Group()
+items_group = pygame.sprite.Group()
+ui_group = pygame.sprite.Group()
 tile_width = tile_height = 50
