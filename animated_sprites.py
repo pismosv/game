@@ -1,4 +1,6 @@
 import pygame
+
+from constants import all_sprites
 from general_functions import *
 
 
@@ -23,4 +25,14 @@ class AnimatedSprite(pygame.sprite.Sprite):
     def update(self):
         self.cur_frame = (self.cur_frame + 1) % len(self.frames)
         self.image = self.frames[self.cur_frame]
+
+
+class Boom(AnimatedSprite):
+    def __init__(self, x, y):
+        super(Boom, self).__init__(
+            pygame.transform.scale(load_image("boom.png"),
+                                   (450, 50)), 9, 1, x, y, all_sprites)
+
+    def update(self):
+        super(Boom, self).update()
 
