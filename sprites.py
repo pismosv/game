@@ -82,6 +82,7 @@ class Player(pygame.sprite.Sprite):
             self.image = player_image_u
 
     def move(self, direction):
+        global stones_have
         self.change_player_sprite(direction)
         if direction == "left":
             self.x -= 1
@@ -125,6 +126,10 @@ class Player(pygame.sprite.Sprite):
                     if type(item) == Diamond:
                         item.kill()
                         self.inventory.append(str(item))
+                        items_list.remove(item)
+                    elif type(item) == Stone:
+                        item.kill()
+                        stones_have += 1
                         items_list.remove(item)
                     elif type(item) == Mine:
                         item.kill()
@@ -187,6 +192,14 @@ class Inventory(pygame.sprite.Sprite):
                                        (70, 70))
             screen.blit(p, (70 * i, 430))
         for i in range(len(main_player.inventory)):
-            it = items_images[main_player.inventory[i]]
-            screen.blit(it, (60 * i, 450))
+            it = pygame.transform.scale(load_image(main_player.inventory[i] +
+                                                   ".png"), (30, 30))
+            screen.blit(it, (30 * i + 30, 450))
 
+
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self, obj_type, pos_x, pos_y):
+        super().__init__(objects_group, all_sprites)
+        self.image = object_images[obj_type]
+        self.rect = self.image.get_rect().move(
+            tile_width * pos_x, tile_height * pos_y)

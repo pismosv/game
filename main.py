@@ -1,5 +1,7 @@
 import random
 from pygame.locals import *
+
+import sprites
 from constants import *
 from animated_sprites import *
 from sprites import *
@@ -10,9 +12,12 @@ pygame.key.set_repeat(200, 200)
 size = width, height = 500, 500
 screen = pygame.display.set_mode(size)
 
+pygame.mixer.pre_init(44100, 10, 1, 512)
+pygame.init()
+
 
 def load_level(filename):
-    filename = "data/" + filename
+    filename = 'data/levels/' + filename
     # читаем уровень, убирая символы перевода строки
     with open(filename, 'r') as mapFile:
         level_map = [line.strip() for line in mapFile]
@@ -60,7 +65,7 @@ def generate_level(level):
                 new_player = Player(x, y)
             elif level[y][x] in obj_str:
                 Tile("ground", x, y)
-                items_list.append(Object(level[y][x], x, y))
+                Object(level[y][x], x, y)
             elif level[y][x] == "m":
                 Tile("ground", x, y)
                 items_list.append(Mine(x, y, all_sprites,
@@ -73,18 +78,23 @@ def generate_level(level):
                     if s <= 0.25:
                         items_list.append(Stick(x, y, all_sprites,
                                                 items_group))
+
                     elif s <= 0.5:
                         items_list.append(Stone(x, y, all_sprites,
                                                 items_group))
+
                     elif s <= 0.8:
                         items_list.append(Coin(x, y, all_sprites,
                                                items_group))
+
                     elif s <= 0.95:
                         items_list.append(Jade(x, y, all_sprites,
                                                items_group))
+
                     elif s <= 1:
                         items_list.append(Diamond(x, y, all_sprites,
                                                   items_group))
+
     return new_player, x, y
 
 
@@ -94,7 +104,7 @@ def terminate():
 
 
 def draw_ui():
-    global player, diamonds, stones
+    global player, diamonds, stones_have
     font = pygame.font.Font(None, 30)
     string_rendered = font.render(f"Предметы:{len(player.inventory)}",
                                   True, pygame.Color('yellow'))
@@ -108,7 +118,7 @@ def draw_ui():
     hp_rect.x = 10
     hp_rect.y = 10
     screen.blit(hp_text, hp_rect)
-    stone_srt = font.render(f"Камни:{stones_have}",
+    stone_srt = font.render(f"Камни:{sprites.stones_have}",
                             True, pygame.Color('gray'))
     intro_rect1 = string_rendered.get_rect()
     intro_rect1.x = 10
@@ -152,9 +162,30 @@ def start_screen():
         cl.tick(FPS)
 
 
+def draw_text(type):
+    font = pygame.font.Font(None, 30)
+    text_coord = 50
+    if type == 1:
+        string_rendered1 = font.render("mission passed!", True,
+                                       pygame.Color('gold'))
+        intro_rect1 = string_rendered1.get_rect()
+        intro_rect1.x = 250 - 70
+        intro_rect1.y = 220
+        screen.blit(string_rendered1, intro_rect1)
+        string_rendered2 = font.render("respect +", True,
+                                       pygame.Color('white'))
+        intro_rect2 = string_rendered2.get_rect()
+        intro_rect2.x = 250 - 45
+        intro_rect2.y = 250
+        screen.blit(string_rendered2, intro_rect2)
+
+
 camera = Camera()
 # level = input("Имя уровня:")
 lvl = random.choice(["map.txt", "map1.txt", "map2.txt"])
+pygame.mixer.music.load(random.choice([r"sounds\alex_f.mp3", r"sounds\tree.mp3",
+                                       r"sounds\conta_theme.mp3"]))
+pygame.mixer.music.play(-1)
 start_screen()
 clock = pygame.time.Clock()
 player, level_x, level_y = generate_level(load_level(lvl))
@@ -163,11 +194,12 @@ pygame.time.set_timer(MYEVENTTYPE, 600)
 a = 0
 pos = None
 fullscreen = False
+win = False
 
 
 # тут главный цикл
 def main():
-    global player, fullscreen, stones_have
+    global player, fullscreen, stones_have, win
     try:
         inventory_open = False
         while True:
@@ -194,12 +226,15 @@ def main():
                         if event.key == pygame.K_DOWN:
                             player.change_player_sprite("down")
                         if event.key == pygame.K_f:
-                            if stones_have != 0:
+                            if sprites.stones_have != 0:
+                                bip = pygame.mixer.Sound(
+                                    "sounds/woo.wav")
+                                bip.play()
                                 stones.append(
                                     FlyingStone(player.looking,
                                                 player.x,
                                                 player.y, player))
-                                stones_have -= 1
+                                sprites.stones_have -= 1
                     if event.key == pygame.K_F11:
                         if not fullscreen:
                             pygame.display.set_mode((width, height), FULLSCREEN)
@@ -228,6 +263,20 @@ def main():
                 s.update()
             if inventory_open:
                 Inventory(player)
+
+            x = 0
+            for elem in items_list:
+                if type(elem) == Mine:
+                    x += 1
+            if x == len(items_list):
+                draw_text(1)
+                pygame.mixer.music.pause()
+                if not win:
+                    bip = pygame.mixer.Sound("sounds/misson_passed.wav")
+                    bip.play()
+                    win = True
+            if player.hp <= 0:
+                pygame.mixer.music.pause()
             pygame.display.flip()
             clock.tick(FPS)
     except Exception as e:
