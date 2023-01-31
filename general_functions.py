@@ -24,3 +24,10 @@ def load_image(name, colorkey=None):
     else:
         image = image.convert_alpha()
     return image
+
+
+def create_sound04(name):
+    fullname = "data/sounds/" + name     # path + name of the sound file
+    sound = pygame.mixer.Sound(fullname)
+    sound.set_volume(0.40)
+    return sound

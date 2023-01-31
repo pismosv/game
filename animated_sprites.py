@@ -32,6 +32,7 @@ class Boom(AnimatedSprite):
         super(Boom, self).__init__(
             pygame.transform.scale(load_image("boom.png"),
                                    (450, 50)), 9, 1, x, y, all_sprites)
+        create_sound04("explosion.wav")
 
     def update(self):
         super(Boom, self).update()
