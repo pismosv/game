@@ -1,5 +1,9 @@
 import random
+
+import pygame
 from pygame.locals import *
+import pygame_widgets
+from pygame_widgets.button import Button
 
 import sprites
 from constants import *
@@ -12,7 +16,7 @@ pygame.key.set_repeat(200, 200)
 size = width, height = 500, 500
 screen = pygame.display.set_mode(size)
 
-pygame.mixer.pre_init(44100, 10, 1, 512)
+pygame.mixer.pre_init(44100, 16, 1, 512)
 pygame.init()
 
 
@@ -126,8 +130,79 @@ def draw_ui():
     screen.blit(stone_srt, intro_rect1)
 
 
+def menu():
+    name_of_game = "Picker"
+    fon = pygame.transform.scale(load_image('fon_menu.png'), (width, height))
+    screen.blit(fon, (0, 0))
+    font = pygame.font.Font(None, 200)
+    string_rendered = font.render(name_of_game, True, pygame.Color('yellow'))
+    intro_rect = string_rendered.get_rect()
+    intro_rect.top = 10
+    intro_rect.x = 45
+    screen.blit(string_rendered, intro_rect)
+
+    pygame.mixer.music.load(r"data/sounds/menu_theme.mp3")
+    pygame.mixer.music.play(-1)
+    s = False
+
+    def start():
+        global s
+        s = True
+
+    button = Button(
+        # Mandatory Parameters
+        screen,  # Surface to place button on
+        100,  # X-coordinate of top left corner
+        150,  # Y-coordinate of top left corner
+        300,  # Width
+        100,  # Height
+
+        # Optional Parameters
+        text='Играть',  # Text to display
+        fontSize=50,  # Size of font
+        margin=20,  # Minimum distance between text/image and edge of button
+        inactiveColour=(255, 229, 10),
+        # Colour of button when not being interacted with
+        hoverColour=(255, 234, 61),  # Colour of button when being hovered over
+        pressedColour=(255, 204, 8),  # Colour of button when being clicked
+        radius=20,  # Radius of border corners (leave empty for not curved)
+        onClick=lambda: main()  # Function to call when clicked on
+    )
+
+    button1 = Button(
+        # Mandatory Parameters
+        screen,  # Surface to place button on
+        100,  # X-coordinate of top left corner
+        270,  # Y-coordinate of top left corner
+        300,  # Width
+        100,  # Height
+
+        # Optional Parameters
+        text='Выход',  # Text to display
+        fontSize=50,  # Size of font
+        margin=20,  # Minimum distance between text/image and edge of button
+        inactiveColour=(255, 229, 10),
+        # Colour of button when not being interacted with
+        hoverColour=(255, 234, 61),  # Colour of button when being hovered over
+        pressedColour=(255, 204, 8),  # Colour of button when being clicked
+        radius=20,  # Radius of border corners (leave empty for not curved)
+        onClick=lambda: exit()  # Function to call when clicked on
+    )
+
+    while True:
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                terminate()
+        if s:
+            return "game"
+        pygame_widgets.update(events)
+        pygame.display.flip()
+
+
 # функция заставки
 def start_screen():
+    pygame.mixer.stop()
     intro_text = ["", "Давным давно...",
                   "Древняя раса людей создала",
                   "Магические камни",
@@ -157,15 +232,15 @@ def start_screen():
                 terminate()
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
-                return  # начинаем игру
+                return
         pygame.display.flip()
         cl.tick(FPS)
 
 
-def draw_text(type):
+def draw_text(tip):
     font = pygame.font.Font(None, 30)
     text_coord = 50
-    if type == 1:
+    if tip == 1:
         string_rendered1 = font.render("mission passed!", True,
                                        pygame.Color('gold'))
         intro_rect1 = string_rendered1.get_rect()
@@ -180,35 +255,37 @@ def draw_text(type):
         screen.blit(string_rendered2, intro_rect2)
 
 
-camera = Camera()
-# level = input("Имя уровня:")
-lvl = random.choice(["map.txt", "map1.txt", "map2.txt"])
-pygame.mixer.music.load(random.choice([r"sounds\alex_f.mp3", r"sounds\tree.mp3",
-                                       r"sounds\conta_theme.mp3"]))
-pygame.mixer.music.play(-1)
-start_screen()
-clock = pygame.time.Clock()
-player, level_x, level_y = generate_level(load_level(lvl))
-MYEVENTTYPE = pygame.USEREVENT + 1
-pygame.time.set_timer(MYEVENTTYPE, 600)
-a = 0
-pos = None
-fullscreen = False
-win = False
-
-
 # тут главный цикл
 def main():
-    global player, fullscreen, stones_have, win
+    global player, fullscreen, stones_have, win, exit_but
     try:
         inventory_open = False
+        pygame.mixer.music.load(random.choice([r"data\sounds\alex_f.mp3",
+                                               r"data\sounds\tree.mp3",
+                                               r"data\sounds\conta_theme.mp3"]))
+        pygame.mixer.music.play(-1)
+        camera = Camera()
+        lvl = random.choice(["map.txt", "map1.txt", "map2.txt"])
+        clock = pygame.time.Clock()
+        player, level_x, level_y = generate_level(load_level(lvl))
+        a = 0
+        pos = None
+        fullscreen = False
+        win = False
         while True:
             screen.fill("black")
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     terminate()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    pos = pygame.mouse.get_pos()
+                    print(pos)
+                    if event.button == 1:
+                        if exit_but.collidepoint(pos):
+                            menu()
+                            print(1)
                 if event.type == pygame.KEYDOWN:
-                    if player.hp > 0:
+                    if player.hp > 0 and not win:
                         if event.key == pygame.K_a:
                             player.move("left")
                         if event.key == pygame.K_d:
@@ -227,14 +304,14 @@ def main():
                             player.change_player_sprite("down")
                         if event.key == pygame.K_f:
                             if sprites.stones_have != 0:
-                                bip = pygame.mixer.Sound(
-                                    "sounds/woo.wav")
+                                bip = create_sound04("woo.wav")
                                 bip.play()
                                 stones.append(
                                     FlyingStone(player.looking,
                                                 player.x,
                                                 player.y, player))
                                 sprites.stones_have -= 1
+
                     if event.key == pygame.K_F11:
                         if not fullscreen:
                             pygame.display.set_mode((width, height), FULLSCREEN)
@@ -248,19 +325,29 @@ def main():
                             inventory_open = True
                         else:
                             inventory_open = False
+                    if event.key == pygame.K_q:
+                        pygame.mixer.music.stop()
+                        pygame.mixer.music.pause()
+                        return "menu"
             camera.update(player)
             for sprite in all_sprites:
                 camera.apply(sprite)
             all_sprites.draw(screen)
             player_group.draw(screen)
             draw_ui()
+            exit_but = pygame.Rect(0, 0, 40, 40)
             for boom in booms:
                 boom.update()
                 if boom.cur_frame == 8:
                     booms.remove(boom)
                     boom.kill()
+                if boom.cur_frame == 1:
+                    b = create_sound04("explosion.wav")
+                    b.play()
+
             for s in stones:
                 s.update()
+
             if inventory_open:
                 Inventory(player)
 
@@ -272,11 +359,13 @@ def main():
                 draw_text(1)
                 pygame.mixer.music.pause()
                 if not win:
-                    bip = pygame.mixer.Sound("sounds/misson_passed.wav")
+                    bip = create_sound04("misson_passed.wav")
                     bip.play()
                     win = True
+
             if player.hp <= 0:
-                pygame.mixer.music.pause()
+                pygame.mixer.music.stop()
+
             pygame.display.flip()
             clock.tick(FPS)
     except Exception as e:
@@ -285,4 +374,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    while True:
+        m = menu()
+        if m == "game":
+            for group in all_groups:
+                group.clear()
+            menu_group.clear()
+            m = main()
+        elif m == "menu":
+            all_sprites.clear()
+            m = menu()
