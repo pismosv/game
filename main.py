@@ -4,6 +4,8 @@ import pygame
 from pygame.locals import *
 import pygame_widgets
 from pygame_widgets.button import Button
+import pygame_menu
+from pygame_menu import themes
 
 import sprites
 from constants import *
@@ -130,74 +132,75 @@ def draw_ui():
     screen.blit(stone_srt, intro_rect1)
 
 
-def menu():
-    name_of_game = "Picker"
-    fon = pygame.transform.scale(load_image('fon_menu.png'), (width, height))
-    screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 200)
-    string_rendered = font.render(name_of_game, True, pygame.Color('yellow'))
-    intro_rect = string_rendered.get_rect()
-    intro_rect.top = 10
-    intro_rect.x = 45
-    screen.blit(string_rendered, intro_rect)
-
-    pygame.mixer.music.load(r"data/sounds/menu_theme.mp3")
-    pygame.mixer.music.play(-1)
-    s = False
-
-    def start():
-        global s
-        s = True
-
-    button = Button(
-        # Mandatory Parameters
-        screen,  # Surface to place button on
-        100,  # X-coordinate of top left corner
-        150,  # Y-coordinate of top left corner
-        300,  # Width
-        100,  # Height
-
-        # Optional Parameters
-        text='Играть',  # Text to display
-        fontSize=50,  # Size of font
-        margin=20,  # Minimum distance between text/image and edge of button
-        inactiveColour=(255, 229, 10),
-        # Colour of button when not being interacted with
-        hoverColour=(255, 234, 61),  # Colour of button when being hovered over
-        pressedColour=(255, 204, 8),  # Colour of button when being clicked
-        radius=20,  # Radius of border corners (leave empty for not curved)
-        onClick=lambda: main()  # Function to call when clicked on
-    )
-
-    button1 = Button(
-        # Mandatory Parameters
-        screen,  # Surface to place button on
-        100,  # X-coordinate of top left corner
-        270,  # Y-coordinate of top left corner
-        300,  # Width
-        100,  # Height
-
-        # Optional Parameters
-        text='Выход',  # Text to display
-        fontSize=50,  # Size of font
-        margin=20,  # Minimum distance between text/image and edge of button
-        inactiveColour=(255, 229, 10),
-        # Colour of button when not being interacted with
-        hoverColour=(255, 234, 61),  # Colour of button when being hovered over
-        pressedColour=(255, 204, 8),  # Colour of button when being clicked
-        radius=20,  # Radius of border corners (leave empty for not curved)
-        onClick=lambda: exit()  # Function to call when clicked on
-    )
-
-    while True:
-        events = pygame.event.get()
-        for event in events:
-            if event.type == pygame.QUIT:
-                terminate()
-        if s:
-            return "game"
-        pygame_widgets.update(events)
-        pygame.display.flip()
+# def menu():
+#     name_of_game = "Picker"
+#     fon = pygame.transform.scale(load_image('fon_menu.png'), (width, height))
+#     screen.blit(fon, (0, 0))
+#     font = pygame.font.Font(None, 200)
+#     string_rendered = font.render(name_of_game, True, pygame.Color('yellow'))
+#     intro_rect = string_rendered.get_rect()
+#     intro_rect.top = 10
+#     intro_rect.x = 45
+#     screen.blit(string_rendered, intro_rect)
+#
+#     pygame.mixer.music.load(r"data/sounds/menu_theme.mp3")
+#     pygame.mixer.music.play(-1)
+#     s = False
+#
+#     def start():
+#         global s
+#         s = True
+#
+#     button = Button(
+#         # Mandatory Parameters
+#         screen,  # Surface to place button on
+#         100,  # X-coordinate of top left corner
+#         150,  # Y-coordinate of top left corner
+#         300,  # Width
+#         100,  # Height
+#
+#         # Optional Parameters
+#         text='Играть',  # Text to display
+#         fontSize=50,  # Size of font
+#         margin=20,  # Minimum distance between text/image and edge of button
+#         inactiveColour=(255, 229, 10),
+#         # Colour of button when not being interacted with
+#         hoverColour=(255, 234, 61),  # Colour of button when being hovered over
+#         pressedColour=(255, 204, 8),  # Colour of button when being clicked
+#         radius=20,  # Radius of border corners (leave empty for not curved)
+#         onClick=lambda: main()  # Function to call when clicked on
+#     )
+#
+#     button1 = Button(
+#         # Mandatory Parameters
+#         screen,  # Surface to place button on
+#         100,  # X-coordinate of top left corner
+#         270,  # Y-coordinate of top left corner
+#         300,  # Width
+#         100,  # Height
+#
+#         # Optional Parameters
+#         text='Выход',  # Text to display
+#         fontSize=50,  # Size of font
+#         margin=20,  # Minimum distance between text/image and edge of button
+#         inactiveColour=(255, 229, 10),
+#         # Colour of button when not being interacted with
+#         hoverColour=(255, 234, 61),  # Colour of button when being hovered
+#         over
+#         pressedColour=(255, 204, 8),  # Colour of button when being clicked
+#         radius=20,  # Radius of border corners (leave empty for not curved)
+#         onClick=lambda: exit()  # Function to call when clicked on
+#     )
+#
+#     while True:
+#         events = pygame.event.get()
+#         for event in events:
+#             if event.type == pygame.QUIT:
+#                 terminate()
+#         if s:
+#             return "game"
+#         pygame_widgets.update(events)
+#         pygame.display.flip()
 
 
 # функция заставки
@@ -255,35 +258,42 @@ def draw_text(tip):
         screen.blit(string_rendered2, intro_rect2)
 
 
+pygame.init()
+surface = pygame.display.set_mode((600, 400))
+
+inventory_open = camera = lvl = clock = player = level_x = \
+    level_y = fullscreen = win = None
+
+background = pygame.Surface(size)
+
+def initstate():
+    global inventory_open, camera, lvl, clock, player, level_x, level_y,\
+        fullscreen, win
+    inventory_open = False
+    camera = Camera()
+    lvl = random.choice(["map.txt", "map1.txt", "map2.txt"])
+    clock = pygame.time.Clock()
+    player, level_x, level_y = generate_level(load_level(lvl))
+    fullscreen = False
+    win = False
+
+
 # тут главный цикл
 def main():
-    global player, fullscreen, stones_have, win, exit_but
+    global inventory_open, camera, lvl, clock, player, level_x, level_y, \
+        fullscreen, win, first_start
     try:
-        inventory_open = False
+        initstate()
+        pygame.display.set_mode((500, 500))
         pygame.mixer.music.load(random.choice([r"data\sounds\alex_f.mp3",
                                                r"data\sounds\tree.mp3",
                                                r"data\sounds\conta_theme.mp3"]))
         pygame.mixer.music.play(-1)
-        camera = Camera()
-        lvl = random.choice(["map.txt", "map1.txt", "map2.txt"])
-        clock = pygame.time.Clock()
-        player, level_x, level_y = generate_level(load_level(lvl))
-        a = 0
-        pos = None
-        fullscreen = False
-        win = False
         while True:
             screen.fill("black")
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     terminate()
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    pos = pygame.mouse.get_pos()
-                    print(pos)
-                    if event.button == 1:
-                        if exit_but.collidepoint(pos):
-                            menu()
-                            print(1)
                 if event.type == pygame.KEYDOWN:
                     if player.hp > 0 and not win:
                         if event.key == pygame.K_a:
@@ -326,16 +336,29 @@ def main():
                         else:
                             inventory_open = False
                     if event.key == pygame.K_q:
+                        global all_sprites, tiles_group, player_group, \
+                            wall_group, objects_group, items_group, ui_group, \
+                            menu_group
+                        for group in all_groups:
+                            print(group)
+                            for item in group:
+                                item.kill()
+                        print(all_groups)
+                        screen.fill((0, 0, 0))
                         pygame.mixer.music.stop()
                         pygame.mixer.music.pause()
-                        return "menu"
+                        pygame.display.set_mode((600, 400))
+                        items_list.clear()
+                        return
+                    if event.key == pygame.K_r:
+                        print(items_list)
+
             camera.update(player)
             for sprite in all_sprites:
                 camera.apply(sprite)
             all_sprites.draw(screen)
             player_group.draw(screen)
             draw_ui()
-            exit_but = pygame.Rect(0, 0, 40, 40)
             for boom in booms:
                 boom.update()
                 if boom.cur_frame == 8:
@@ -365,7 +388,6 @@ def main():
 
             if player.hp <= 0:
                 pygame.mixer.music.stop()
-
             pygame.display.flip()
             clock.tick(FPS)
     except Exception as e:
@@ -373,14 +395,49 @@ def main():
         terminate()
 
 
+def start_the_game():
+    mainmenu._open(loading)
+    pygame.time.set_timer(update_loading, 30)
+
+
+def top_menu():
+    mainmenu._open(level)
+
+
+mainmenu = pygame_menu.Menu('Welcome', 600, 400, theme=themes.THEME_SOLARIZED)
+mainmenu.add.text_input('Name: ', default='username')
+mainmenu.add.button('Play', main)
+mainmenu.add.button('Top', top_menu)
+mainmenu.add.button('Quit', pygame_menu.events.EXIT)
+
+level = pygame_menu.Menu('Top player money', 600, 400,
+                         theme=themes.THEME_BLUE)
+
+loading = pygame_menu.Menu('Loading the Game...', 600, 400,
+                           theme=themes.THEME_DARK)
+loading.add.progress_bar("Progress", progressbar_id="1", default=0, width=200, )
+
+arrow = pygame_menu.widgets.LeftArrowSelection(arrow_size=(10, 15))
+
+update_loading = pygame.USEREVENT + 0
+
 if __name__ == "__main__":
     while True:
-        m = menu()
-        if m == "game":
-            for group in all_groups:
-                group.clear()
-            menu_group.clear()
-            m = main()
-        elif m == "menu":
-            all_sprites.clear()
-            m = menu()
+        events = pygame.event.get()
+        for event in events:
+            if event.type == update_loading:
+                progress = loading.get_widget("1")
+                progress.set_value(progress.get_value() + 1)
+                if progress.get_value() == 100:
+                    pygame.time.set_timer(update_loading, 0)
+            if event.type == pygame.QUIT:
+                exit()
+
+        if mainmenu.is_enabled():
+            mainmenu.update(events)
+            mainmenu.draw(surface)
+            if (mainmenu.get_current().get_selected_widget()):
+                arrow.draw(surface,
+                           mainmenu.get_current().get_selected_widget())
+
+        pygame.display.update()
