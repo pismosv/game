@@ -2,8 +2,6 @@ import random
 
 import pygame
 from pygame.locals import *
-import pygame_widgets
-from pygame_widgets.button import Button
 import pygame_menu
 from pygame_menu import themes
 
