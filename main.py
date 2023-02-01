@@ -2,8 +2,6 @@ import random
 
 import pygame
 from pygame.locals import *
-import pygame_widgets
-from pygame_widgets.button import Button
 import pygame_menu
 from pygame_menu import themes
 
@@ -313,7 +311,7 @@ def initstate():
 # тут главный цикл
 def main():
     global inventory_open, camera, lvl, clock, player, level_x, level_y, \
-        fullscreen, win, first_start
+        fullscreen, win, first_start, stones_have
     try:
         initstate()
         pygame.display.set_mode((500, 500))
@@ -383,6 +381,7 @@ def main():
                         pygame.mixer.music.load(r"data\sounds\menu_theme.mp3")
 
                         pygame.mixer.music.play(-1)
+                        sprites.stones_have = 3
                         return
 
             camera.update(player)
