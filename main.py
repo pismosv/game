@@ -2,8 +2,6 @@ import random
 
 import pygame
 from pygame.locals import *
-import pygame_widgets
-from pygame_widgets.button import Button
 import pygame_menu
 from pygame_menu import themes
 
@@ -313,7 +311,8 @@ def initstate():
 # тут главный цикл
 def main():
     global inventory_open, camera, lvl, clock, player, level_x, level_y, \
-        fullscreen, win, first_start
+        fullscreen, win, first_start, stones_have
+    j = 0
     try:
         initstate()
         pygame.display.set_mode((500, 500))
@@ -383,7 +382,15 @@ def main():
                         pygame.mixer.music.load(r"data\sounds\menu_theme.mp3")
 
                         pygame.mixer.music.play(-1)
+                        sprites.stones_have = 3
                         return
+                    if event.key == pygame.K_TAB:
+                        j += 1
+                        print(j)
+                        if j % 2 != 0:
+                            pygame.mixer.music.pause()
+                        else:
+                            pygame.mixer.music.unpause()
 
             camera.update(player)
             for sprite in all_sprites:
@@ -437,9 +444,19 @@ def top_menu():
     mainmenu._open(level)
 
 
-loading = pygame_menu.Menu('Loading the Game...', 600, 400,
-                           theme=themes.THEME_DARK)
-loading.add.progress_bar("Progress", progressbar_id="1", default=0, width=200, )
+learning = pygame_menu.Menu('Обучение', 600, 400,
+                            theme=themes.THEME_DARK)
+help = """Клавиши:
+       -Кнопки W/A/S/D чтобы ходить во все стороны
+       -Кнопки верх/вниз/влево/вправо чтобы крутить
+        головой персонажа(чтобы удобней кидать камни)
+       -Кнопка F для бросания камня(камень полетит туда
+       куда вы смотрите в данный момент)
+       -Кнопка Q чтобы покинуть игру
+       -Кнопка TAB для выключения и включения
+        фоновой музыки"""
+
+learning.add.label(help, font_size=20)
 update_loading = pygame.USEREVENT + 0
 
 mainmenu = pygame_menu.Menu('Picker', 600, 400, theme=themes.THEME_ORANGE)
@@ -447,20 +464,19 @@ name_text = mainmenu.add.text_input('Name: ', default='username')
 
 print(name_text.get_value())
 
-mainmenu.add.button('Play', start_the_game)
-mainmenu.add.button('Top', top_menu)
-mainmenu.add.button('Quit', pygame_menu.events.EXIT)
+mainmenu.add.button('Игра', start_the_game)
+mainmenu.add.button('Топ игроков', top_menu)
+mainmenu.add.button('Обучение', learning)
+mainmenu.add.button('выход', pygame_menu.events.EXIT)
 
 level = pygame_menu.Menu('Top player money', 600, 400,
                          theme=themes.THEME_BLUE)
 table = level.add.table(table_id='my_table', font_size=25)
 table.default_cell_padding = 15
 table.default_row_background_color = 'white'
-table.add_row(['First item', 'Second item'],
+table.add_row(['Имя игрока', 'кол-во кредитов'],
               cell_font=pygame_menu.font.FONT_OPEN_SANS_BOLD)
-table.add_row(['A', 'B'])
-table.add_row(['α', 'β'], cell_align=pygame_menu.locals.ALIGN_CENTER)
-
+table.add_row(['-', '-'], cell_align=pygame_menu.locals.ALIGN_CENTER)
 
 arrow = pygame_menu.widgets.LeftArrowSelection(arrow_size=(10, 15))
 
@@ -471,16 +487,20 @@ pygame.mixer.music.play(-1)
 pygame.mixer.music.set_volume(0.4)
 
 if __name__ == "__main__":
+    i = 0
     while True:
         events = pygame.event.get()
         for event in events:
-            if event.type == update_loading:
-                progress = loading.get_widget("1")
-                progress.set_value(progress.get_value() + 1)
-                if progress.get_value() == 100:
-                    pygame.time.set_timer(update_loading, 0)
             if event.type == pygame.QUIT:
                 exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_TAB:
+                    i += 1
+                    print(i)
+                    if i % 2 != 0:
+                        pygame.mixer.music.pause()
+                    else:
+                        pygame.mixer.music.unpause()
 
         if mainmenu.is_enabled():
             mainmenu.update(events)
