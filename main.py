@@ -207,18 +207,23 @@ def draw_ui():
 def start_screen():
     pygame.mixer.stop()
     intro_text = ["", "Давным давно...",
-                  "Древняя раса людей создала",
-                  "Магические камни",
-                  "Но после 4 тысяч лет, предки",
-                  "Этих могущественных людей начали воевать",
-                  "Из-за этих камней. После войны",
-                  "камни остались в древних руинах.",
+                  "Древняя раса людей нашла",
+                  "В горе Маукаи \"Красивые камни\" и стала им "
+                  "поклоняться",
+                  "Так как они светили \"божественным светом\"",
+                  "Но после 20  лет, усердной добычи появились",
+                  "Еретики, которые продавали камни.",
+                  "И верующим это не понравилось и они",
+                  "Начали сжигать их на костре, но в итоге все перебили",
+                  " друг друга.",
+                  "И эти камни остались в древних руинах.",
                   "И наш герой решил их собрать,",
-                  "Чтобы вернуть могущество своего народа"]
+                  "Чтобы заработать денег.",
+                  "Так как камни ,технически, ничьи."]
 
     fon = pygame.transform.scale(load_image('fon_level.png'), (width, height))
     screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
+    font = pygame.font.Font(None, 25)
     text_coord = 50
     for line in intro_text:  # тут отрисовываем все строчки одна за одной
         string_rendered = font.render(line, True, pygame.Color('white'))
@@ -256,6 +261,32 @@ def draw_text(tip):
         intro_rect2.x = 250 - 45
         intro_rect2.y = 250
         screen.blit(string_rendered2, intro_rect2)
+        string_rendered3 = font.render("нажми Q чтобы выйти в меню", True,
+                                       pygame.Color('red'))
+        intro_rect3 = string_rendered3.get_rect()
+        intro_rect3.x = 250 - 100
+        intro_rect3.y = 350
+        screen.blit(string_rendered3, intro_rect3)
+    elif tip == 2:
+        string_rendered1 = font.render("mission failed!", True,
+                                       pygame.Color('red'))
+        intro_rect1 = string_rendered1.get_rect()
+        intro_rect1.x = 250 - 70
+        intro_rect1.y = 220
+        screen.blit(string_rendered1, intro_rect1)
+        string_rendered2 = font.render("хорошая попытка!",
+                                       True,
+                                       pygame.Color('white'))
+        intro_rect2 = string_rendered2.get_rect()
+        intro_rect2.x = 250 - 150
+        intro_rect2.y = 250
+        screen.blit(string_rendered2, intro_rect2)
+        string_rendered3 = font.render("нажми Q чтобы выйти в меню", True,
+                                       pygame.Color('red'))
+        intro_rect3 = string_rendered3.get_rect()
+        intro_rect3.x = 250 - 100
+        intro_rect3.y = 350
+        screen.blit(string_rendered3, intro_rect3)
 
 
 pygame.init()
@@ -266,8 +297,9 @@ inventory_open = camera = lvl = clock = player = level_x = \
 
 background = pygame.Surface(size)
 
+
 def initstate():
-    global inventory_open, camera, lvl, clock, player, level_x, level_y,\
+    global inventory_open, camera, lvl, clock, player, level_x, level_y, \
         fullscreen, win
     inventory_open = False
     camera = Camera()
@@ -289,6 +321,7 @@ def main():
                                                r"data\sounds\tree.mp3",
                                                r"data\sounds\conta_theme.mp3"]))
         pygame.mixer.music.play(-1)
+        start_screen()
         while True:
             screen.fill("black")
             for event in pygame.event.get():
@@ -340,18 +373,17 @@ def main():
                             wall_group, objects_group, items_group, ui_group, \
                             menu_group
                         for group in all_groups:
-                            print(group)
                             for item in group:
                                 item.kill()
-                        print(all_groups)
                         screen.fill((0, 0, 0))
                         pygame.mixer.music.stop()
                         pygame.mixer.music.pause()
                         pygame.display.set_mode((600, 400))
                         items_list.clear()
+                        pygame.mixer.music.load(r"data\sounds\menu_theme.mp3")
+
+                        pygame.mixer.music.play(-1)
                         return
-                    if event.key == pygame.K_r:
-                        print(items_list)
 
             camera.update(player)
             for sprite in all_sprites:
@@ -388,6 +420,8 @@ def main():
 
             if player.hp <= 0:
                 pygame.mixer.music.stop()
+                player.hp = 0
+                draw_text(2)
             pygame.display.flip()
             clock.tick(FPS)
     except Exception as e:
@@ -396,30 +430,45 @@ def main():
 
 
 def start_the_game():
-    mainmenu._open(loading)
-    pygame.time.set_timer(update_loading, 30)
+    main()
 
 
 def top_menu():
     mainmenu._open(level)
 
 
-mainmenu = pygame_menu.Menu('Welcome', 600, 400, theme=themes.THEME_SOLARIZED)
-mainmenu.add.text_input('Name: ', default='username')
-mainmenu.add.button('Play', main)
+loading = pygame_menu.Menu('Loading the Game...', 600, 400,
+                           theme=themes.THEME_DARK)
+loading.add.progress_bar("Progress", progressbar_id="1", default=0, width=200, )
+update_loading = pygame.USEREVENT + 0
+
+mainmenu = pygame_menu.Menu('Picker', 600, 400, theme=themes.THEME_ORANGE)
+name_text = mainmenu.add.text_input('Name: ', default='username')
+
+print(name_text.get_value())
+
+mainmenu.add.button('Play', start_the_game)
 mainmenu.add.button('Top', top_menu)
 mainmenu.add.button('Quit', pygame_menu.events.EXIT)
 
 level = pygame_menu.Menu('Top player money', 600, 400,
                          theme=themes.THEME_BLUE)
+table = level.add.table(table_id='my_table', font_size=25)
+table.default_cell_padding = 15
+table.default_row_background_color = 'white'
+table.add_row(['First item', 'Second item'],
+              cell_font=pygame_menu.font.FONT_OPEN_SANS_BOLD)
+table.add_row(['A', 'B'])
+table.add_row(['α', 'β'], cell_align=pygame_menu.locals.ALIGN_CENTER)
 
-loading = pygame_menu.Menu('Loading the Game...', 600, 400,
-                           theme=themes.THEME_DARK)
-loading.add.progress_bar("Progress", progressbar_id="1", default=0, width=200, )
 
 arrow = pygame_menu.widgets.LeftArrowSelection(arrow_size=(10, 15))
 
-update_loading = pygame.USEREVENT + 0
+pygame.mixer.music.load(r"data\sounds\menu_theme.mp3")
+
+pygame.mixer.music.play(-1)
+
+pygame.mixer.music.set_volume(0.4)
 
 if __name__ == "__main__":
     while True:
