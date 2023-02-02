@@ -262,7 +262,7 @@ def draw_text(tip):
         string_rendered3 = font.render("нажми Q чтобы выйти в меню", True,
                                        pygame.Color('red'))
         intro_rect3 = string_rendered3.get_rect()
-        intro_rect3.x = 250 - 100
+        intro_rect3.x = 250 - 140
         intro_rect3.y = 350
         screen.blit(string_rendered3, intro_rect3)
     elif tip == 2:
@@ -276,13 +276,13 @@ def draw_text(tip):
                                        True,
                                        pygame.Color('white'))
         intro_rect2 = string_rendered2.get_rect()
-        intro_rect2.x = 250 - 150
+        intro_rect2.x = 250 - 85
         intro_rect2.y = 250
         screen.blit(string_rendered2, intro_rect2)
         string_rendered3 = font.render("нажми Q чтобы выйти в меню", True,
                                        pygame.Color('red'))
         intro_rect3 = string_rendered3.get_rect()
-        intro_rect3.x = 250 - 100
+        intro_rect3.x = 250 - 140
         intro_rect3.y = 350
         screen.blit(string_rendered3, intro_rect3)
 
@@ -358,16 +358,15 @@ def main():
                         if not fullscreen:
                             pygame.display.set_mode((width, height), FULLSCREEN)
                             fullscreen = True
-                    if event.key == pygame.K_F10:
-                        if fullscreen:
+                        else:
                             pygame.display.set_mode((width, height))
                             fullscreen = False
-                    if event.key == pygame.K_c:
+                    if event.key == pygame.K_c:  # open inventory
                         if not inventory_open:
                             inventory_open = True
                         else:
                             inventory_open = False
-                    if event.key == pygame.K_q:
+                    if event.key == pygame.K_q:  # button to leave from game
                         global all_sprites, tiles_group, player_group, \
                             wall_group, objects_group, items_group, ui_group, \
                             menu_group
@@ -384,13 +383,18 @@ def main():
                         pygame.mixer.music.play(-1)
                         sprites.stones_have = 3
                         return
-                    if event.key == pygame.K_TAB:
+                    if event.key == pygame.K_TAB:  # turn on/off music
                         j += 1
                         print(j)
                         if j % 2 != 0:
                             pygame.mixer.music.pause()
                         else:
                             pygame.mixer.music.unpause()
+                    if sv_cheats:  # if cheats true
+                        if event.key == pygame.K_l:
+                            items_list.clear()
+                        if event.key == pygame.K_m:
+                            player.hp = 0
 
             camera.update(player)
             for sprite in all_sprites:
@@ -462,7 +466,7 @@ update_loading = pygame.USEREVENT + 0
 mainmenu = pygame_menu.Menu('Picker', 600, 400, theme=themes.THEME_ORANGE)
 name_text = mainmenu.add.text_input('Name: ', default='username')
 
-print(name_text.get_value())
+# print(name_text.get_value())
 
 mainmenu.add.button('Игра', start_the_game)
 mainmenu.add.button('Топ игроков', top_menu)
@@ -501,6 +505,7 @@ if __name__ == "__main__":
                         pygame.mixer.music.pause()
                     else:
                         pygame.mixer.music.unpause()
+
 
         if mainmenu.is_enabled():
             mainmenu.update(events)

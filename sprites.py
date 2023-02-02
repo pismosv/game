@@ -133,7 +133,7 @@ class Player(pygame.sprite.Sprite):
                         items_list.remove(item)
                     elif type(item) == Mine:
                         item.kill()
-                        self.hp -= 15
+                        self.hp -= 10
                         booms.append(Boom(item.rect.x, item.rect.y))
                         items_list.remove(item)
                     else:

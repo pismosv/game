@@ -11,6 +11,7 @@ mouse_pos = None
 count = 0
 hit = None
 CLICK = False
+sv_cheats = False
 
 # группы спрайтов
 all_sprites = pygame.sprite.Group()
