@@ -110,12 +110,12 @@ def terminate():
 def draw_ui():
     global player, diamonds, stones_have
     font = pygame.font.Font(None, 30)
-    string_rendered = font.render(f"Предметы:{len(player.inventory)}",
-                                  True, pygame.Color('yellow'))
-    intro_rect = string_rendered.get_rect()
-    intro_rect.x = 10
-    intro_rect.y = 30
-    screen.blit(string_rendered, intro_rect)
+    # string_rendered = font.render(f"Предметы:{len(player.inventory)}",
+    #                               True, pygame.Color('yellow'))
+    # intro_rect = string_rendered.get_rect()
+    # intro_rect.x = 10
+    # intro_rect.y = 30
+    # screen.blit(string_rendered, intro_rect)
     hp_text = font.render(f"Здоровье:{player.hp}",
                           True, pygame.Color('red'))
     hp_rect = hp_text.get_rect()
@@ -124,81 +124,10 @@ def draw_ui():
     screen.blit(hp_text, hp_rect)
     stone_srt = font.render(f"Камни:{sprites.stones_have}",
                             True, pygame.Color('gray'))
-    intro_rect1 = string_rendered.get_rect()
+    intro_rect1 = stone_srt.get_rect()
     intro_rect1.x = 10
-    intro_rect1.y = 50
+    intro_rect1.y = 30
     screen.blit(stone_srt, intro_rect1)
-
-
-# def menu():
-#     name_of_game = "Picker"
-#     fon = pygame.transform.scale(load_image('fon_menu.png'), (width, height))
-#     screen.blit(fon, (0, 0))
-#     font = pygame.font.Font(None, 200)
-#     string_rendered = font.render(name_of_game, True, pygame.Color('yellow'))
-#     intro_rect = string_rendered.get_rect()
-#     intro_rect.top = 10
-#     intro_rect.x = 45
-#     screen.blit(string_rendered, intro_rect)
-#
-#     pygame.mixer.music.load(r"data/sounds/menu_theme.mp3")
-#     pygame.mixer.music.play(-1)
-#     s = False
-#
-#     def start():
-#         global s
-#         s = True
-#
-#     button = Button(
-#         # Mandatory Parameters
-#         screen,  # Surface to place button on
-#         100,  # X-coordinate of top left corner
-#         150,  # Y-coordinate of top left corner
-#         300,  # Width
-#         100,  # Height
-#
-#         # Optional Parameters
-#         text='Играть',  # Text to display
-#         fontSize=50,  # Size of font
-#         margin=20,  # Minimum distance between text/image and edge of button
-#         inactiveColour=(255, 229, 10),
-#         # Colour of button when not being interacted with
-#         hoverColour=(255, 234, 61),  # Colour of button when being hovered over
-#         pressedColour=(255, 204, 8),  # Colour of button when being clicked
-#         radius=20,  # Radius of border corners (leave empty for not curved)
-#         onClick=lambda: main()  # Function to call when clicked on
-#     )
-#
-#     button1 = Button(
-#         # Mandatory Parameters
-#         screen,  # Surface to place button on
-#         100,  # X-coordinate of top left corner
-#         270,  # Y-coordinate of top left corner
-#         300,  # Width
-#         100,  # Height
-#
-#         # Optional Parameters
-#         text='Выход',  # Text to display
-#         fontSize=50,  # Size of font
-#         margin=20,  # Minimum distance between text/image and edge of button
-#         inactiveColour=(255, 229, 10),
-#         # Colour of button when not being interacted with
-#         hoverColour=(255, 234, 61),  # Colour of button when being hovered
-#         over
-#         pressedColour=(255, 204, 8),  # Colour of button when being clicked
-#         radius=20,  # Radius of border corners (leave empty for not curved)
-#         onClick=lambda: exit()  # Function to call when clicked on
-#     )
-#
-#     while True:
-#         events = pygame.event.get()
-#         for event in events:
-#             if event.type == pygame.QUIT:
-#                 terminate()
-#         if s:
-#             return "game"
-#         pygame_widgets.update(events)
-#         pygame.display.flip()
 
 
 # функция заставки
@@ -385,7 +314,6 @@ def main():
                         return
                     if event.key == pygame.K_TAB:  # turn on/off music
                         j += 1
-                        print(j)
                         if j % 2 != 0:
                             pygame.mixer.music.pause()
                         else:
@@ -505,7 +433,6 @@ if __name__ == "__main__":
                         pygame.mixer.music.pause()
                     else:
                         pygame.mixer.music.unpause()
-
 
         if mainmenu.is_enabled():
             mainmenu.update(events)
