@@ -1,3 +1,4 @@
+import csv
 import random
 
 import pygame
@@ -304,13 +305,17 @@ def main():
                                 item.kill()
                         screen.fill((0, 0, 0))
                         pygame.mixer.music.stop()
-                        pygame.mixer.music.pause()
+                        pygame.mixer.stop()
                         pygame.display.set_mode((600, 400))
                         items_list.clear()
                         pygame.mixer.music.load(r"data\sounds\menu_theme.mp3")
 
                         pygame.mixer.music.play(-1)
                         sprites.stones_have = 3
+                        if win:
+                            count_money_for_wining()
+                        update_csv()
+
                         return
                     if event.key == pygame.K_TAB:  # turn on/off music
                         j += 1
@@ -369,37 +374,138 @@ def main():
 
 
 def start_the_game():
-    main()
+    if root_to_play:
+        main()
+    else:
+        return
 
 
-def top_menu():
+def update_csv():
+    filename = "tops.csv"
+    f = open(filename, "w+")
+    f.close()
+    with open('tops.csv', 'w', newline='',
+              encoding="utf8") as csvfile:
+        writer = csv.writer(
+            csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        for elem in top_data:
+            writer.writerow(elem)
+
+
+def change_value_in_list(name, value):
+    global top_data
+    names = [x[0] for x in top_data]
+    if name in names:
+        for i in range(len(top_data)):
+            if top_data[i][0] == name:
+                top_data[i][1] = value
+                break
+        top_data.sort(key=lambda x: int(x[1]), reverse=True)
+    else:
+        top_data.append([name, value])
+        top_data.sort(key=lambda x: int(x[1]), reverse=True)
+
+
+def count_money_for_wining():
+    money = 0
+    cost = {
+        'diamond': 30,
+        'stick': 5,
+
+        'coin': 10,
+        'jade': 15
+    }
+    for elem in player.inventory:
+        money += cost[elem]
+    change_value_in_list(username_text.get_value(), money)
+
+
+def read_csv():
+    info = []
+    with open('tops.csv', encoding="utf8") as csvfile:
+        reader = csv.reader(csvfile, delimiter=';', quotechar='"')
+        for index, row in enumerate(reader):
+            info.append(row)
+    info.sort(key=lambda x: x[1])
+    return sorted(info, key=lambda x: int(x[1]), reverse=True)
+
+
+def level_menu():
+    global top_data
+    global level, table, rows_in_table
+    for elem in rows_in_table:
+        table.remove_row(elem)
+    rows_in_table = []
+    for row in top_data:
+        i = table.add_row(row, cell_align=pygame_menu.locals.ALIGN_CENTER)
+        rows_in_table.append(i)
     mainmenu._open(level)
 
 
+def check_name():
+    global root_to_play
+    cur = username_text.get_value()
+    if cur:
+        if len(cur) >= 4:
+            for s in cur:
+                if s in "&$%@#*:;":
+                    root_to_play = False
+                    return
+            root_to_play = True
+            return
+    root_to_play = False
+    return
+
+
+root_to_play = False
+
+top_data = read_csv()
+local_name = "username"
+
 learning = pygame_menu.Menu('Обучение', 600, 400,
                             theme=themes.THEME_DARK)
-help = """Клавиши:
-       -Кнопки W/A/S/D чтобы ходить во все стороны
-       -Кнопки верх/вниз/влево/вправо чтобы крутить
-        головой персонажа(чтобы удобней кидать камни)
-       -Кнопка F для бросания камня(камень полетит туда
-       куда вы смотрите в данный момент)
-       -Кнопка Q чтобы покинуть игру
-       -Кнопка TAB для выключения и включения
-        фоновой музыки"""
+help_ = """Клавиши:
+    -Кнопки W/A/S/D чтобы ходить во все стороны
+    -Кнопки верх/вниз/влево/вправо чтобы крутить
+    головой персонажа(чтобы удобней кидать камни)
+    -Кнопка F для бросания камня(камень полетит туда
+    куда вы смотрите в данный момент)
+    -Кнопка Q чтобы покинуть игру
+    -Кнопка TAB для выключения и включения
+    фоновой музыки
+    -Кнопка C включает/выключает отображение 
+    инвенторя
+       
+Перед тем как играть вам нужно придумать
+себе имя и ввести его в окно. Если вы будете
+играть под другим именем то все 
+выигранные очки уйдут на то имя.
+Критерии имени:
+    -использовать буквы  и цифры
+    -длина больше 3 букв/цифр
+    -не использовать пробелы
+    -не использовать спец символы &$%@#*:;
+    
+    """
 
-learning.add.label(help, font_size=20)
+learning.add.label(help_, font_size=20, label_id="1")
+
+a = learning.get_widgets()
+for elem in a:
+    elem.set_alignment(pygame_menu.locals.ALIGN_LEFT)
+
+
+
 update_loading = pygame.USEREVENT + 0
 
 mainmenu = pygame_menu.Menu('Picker', 600, 400, theme=themes.THEME_ORANGE)
-name_text = mainmenu.add.text_input('Name: ', default='username')
+username_text = mainmenu.add.text_input('Name: ', default='username')
 
 # print(name_text.get_value())
 
 mainmenu.add.button('Игра', start_the_game)
-mainmenu.add.button('Топ игроков', top_menu)
+mainmenu.add.button('Топ игроков', level_menu)
 mainmenu.add.button('Обучение', learning)
-mainmenu.add.button('выход', pygame_menu.events.EXIT)
 
 level = pygame_menu.Menu('Top player money', 600, 400,
                          theme=themes.THEME_BLUE)
@@ -408,31 +514,42 @@ table.default_cell_padding = 15
 table.default_row_background_color = 'white'
 table.add_row(['Имя игрока', 'кол-во кредитов'],
               cell_font=pygame_menu.font.FONT_OPEN_SANS_BOLD)
-table.add_row(['-', '-'], cell_align=pygame_menu.locals.ALIGN_CENTER)
+rows_in_table = []
+for row in top_data:
+    i = table.add_row(row, cell_align=pygame_menu.locals.ALIGN_CENTER)
+    rows_in_table.append(i)
 
 arrow = pygame_menu.widgets.LeftArrowSelection(arrow_size=(10, 15))
 
 pygame.mixer.music.load(r"data\sounds\menu_theme.mp3")
-
 pygame.mixer.music.play(-1)
-
 pygame.mixer.music.set_volume(0.4)
 
+music_on = True
 if __name__ == "__main__":
-    i = 0
     while True:
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:
+                update_csv()
                 exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_TAB:
-                    i += 1
-                    print(i)
-                    if i % 2 != 0:
+                    if music_on:
+                        music_on = False
+                    else:
+                        music_on = True
+
+                    if not music_on:
                         pygame.mixer.music.pause()
                     else:
                         pygame.mixer.music.unpause()
+
+        if local_name != username_text.get_value():
+            local_name = username_text.get_value()
+            check_name()
+            print(root_to_play)
+            print(local_name)
 
         if mainmenu.is_enabled():
             mainmenu.update(events)
