@@ -397,7 +397,8 @@ def change_value_in_list(name, value):
     if name in names:
         for i in range(len(top_data)):
             if top_data[i][0] == name:
-                top_data[i][1] = value
+                # починил в последний момент
+                top_data[i][1] = int(top_data[i][1]) + value 
                 break
         top_data.sort(key=lambda x: int(x[1]), reverse=True)
     else:
