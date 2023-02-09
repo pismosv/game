@@ -134,20 +134,14 @@ def draw_ui():
 # функция заставки
 def start_screen():
     pygame.mixer.stop()
-    intro_text = ["", "Давным давно...",
-                  "Древняя раса людей нашла",
-                  "В горе Маукаи \"Красивые камни\" и стала им "
-                  "поклоняться",
-                  "Так как они светили \"божественным светом\"",
-                  "Но после 20  лет, усердной добычи появились",
-                  "Еретики, которые продавали камни.",
-                  "И верующим это не понравилось и они",
-                  "Начали сжигать их на костре, но в итоге все перебили",
-                  " друг друга.",
-                  "И эти камни остались в древних руинах.",
-                  "И наш герой решил их собрать,",
-                  "Чтобы заработать денег.",
-                  "Так как камни ,технически, ничьи."]
+    intro_text = ["", "", "Когда-то планета Шушенера была цветущим миром.",
+                  "Народы этой планеты возводили странные строения",
+                  "и хранили там свои сокровища, но они придумывали",
+                  "хитроумные ловушки, чтобы ни кто не смог",
+                  "их забрать. Но что же случилось? Не осталось ни ",
+                  "кого на этой планете, кто бы мог рассказать, куда",
+                  "делись все обитатели? Мы теперь оказались здесь,",
+                  "чтобы разобраться и найти все тайники и сокровища."]
 
     fon = pygame.transform.scale(load_image('fon_level.png'), (width, height))
     screen.blit(fon, (0, 0))
@@ -221,14 +215,14 @@ pygame.init()
 surface = pygame.display.set_mode((600, 400))
 
 inventory_open = camera = lvl = clock = player = level_x = \
-    level_y = fullscreen = win = None
+    level_y = fullscreen = win = game_over = None
 
 background = pygame.Surface(size)
 
 
 def initstate():
     global inventory_open, camera, lvl, clock, player, level_x, level_y, \
-        fullscreen, win
+        fullscreen, win, game_over
     inventory_open = False
     camera = Camera()
     lvl = random.choice(["map.txt", "map1.txt", "map2.txt"])
@@ -236,12 +230,13 @@ def initstate():
     player, level_x, level_y = generate_level(load_level(lvl))
     fullscreen = False
     win = False
+    game_over = False
 
 
 # тут главный цикл
 def main():
     global inventory_open, camera, lvl, clock, player, level_x, level_y, \
-        fullscreen, win, first_start, stones_have
+        fullscreen, win, first_start, stones_have, game_over
     j = 0
     try:
         initstate()
@@ -366,6 +361,10 @@ def main():
                 pygame.mixer.music.stop()
                 player.hp = 0
                 draw_text(2)
+                if not game_over:
+                    bip = create_sound04("game_over.wav")
+                    bip.play()
+                    game_over = True
             pygame.display.flip()
             clock.tick(FPS)
     except Exception as e:
@@ -546,8 +545,6 @@ if __name__ == "__main__":
         if local_name != username_text.get_value():
             local_name = username_text.get_value()
             check_name()
-            print(root_to_play)
-            print(local_name)
 
         if mainmenu.is_enabled():
             mainmenu.update(events)
